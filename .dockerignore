@@ -2,3 +2,5 @@
 *.md
 docs/
 .claude/
+.playwright-cli/
+playwright-cli.json
