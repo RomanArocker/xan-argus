@@ -1,9 +1,9 @@
 {{define "content"}}
-<div class="page-header">
+<header class="page-header">
     <h1>Users</h1>
     <a href="/users/new" class="btn btn-primary">+ New User</a>
-</div>
-<div class="search-bar">
+</header>
+<search class="search-bar">
     <input type="search" name="q" placeholder="Search users..."
            hx-get="/users/rows" hx-trigger="keyup changed delay:300ms"
            hx-target="#user-rows" hx-include="[name='type']" value="{{.Search}}">
@@ -13,7 +13,7 @@
         <option value="customer_staff" {{if eq .Filter "customer_staff"}}selected{{end}}>Customer Staff</option>
         <option value="internal_staff" {{if eq .Filter "internal_staff"}}selected{{end}}>Internal Staff</option>
     </select>
-</div>
+</search>
 <div class="card">
     <table>
         <thead><tr><th>Name</th><th>Type</th><th>Created</th><th></th></tr></thead>
