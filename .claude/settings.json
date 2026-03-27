@@ -11,6 +11,18 @@
             "statusMessage": "Formatting Go file..."
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command' | grep -q '^git commit' && docker compose up --build -d || true",
+            "timeout": 120,
+            "async": true,
+            "statusMessage": "Rebuilding Docker containers..."
+          }
+        ]
       }
     ]
   }

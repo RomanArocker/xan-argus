@@ -29,7 +29,9 @@
 Thumbs.db
 
 # Claude Code personal settings
+CLAUDE.md
 CLAUDE.local.md
+.claude/
 .claude/settings.local.json
 
 # Playwright CLI (browser automation artifacts)
