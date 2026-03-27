@@ -7,9 +7,9 @@
 
 -- customers
 INSERT INTO customers (id, name, contact_email, notes) VALUES
-    ('00000000-0000-0000-0000-000000000101', 'Müller GmbH', 'info@mueller-gmbh.de', 'Manufacturing company, 25 employees. Main contact: Hans Müller.'),
-    ('00000000-0000-0000-0000-000000000102', 'Schmidt & Partner', 'office@schmidt-partner.de', 'Law firm, 10 employees. Premium support contract.'),
-    ('00000000-0000-0000-0000-000000000103', 'TechStart AG', 'admin@techstart.de', 'Tech startup, 40 employees. Rapid growth, frequent hardware orders.')
+    ('00000000-0000-0000-0000-000000000101', 'Müller AG', 'info@mueller-ag.ch', 'Manufacturing company in Zürich, 25 employees. Main contact: Hans Müller.'),
+    ('00000000-0000-0000-0000-000000000102', 'Schmidt & Partner', 'office@schmidt-partner.ch', 'Law firm in Bern, 10 employees. Premium support contract.'),
+    ('00000000-0000-0000-0000-000000000103', 'TechStart GmbH', 'admin@techstart.ch', 'Tech startup in Basel, 40 employees. Rapid growth, frequent hardware orders.')
 ON CONFLICT (id) DO NOTHING;
 
 -- users (customer_staff)
@@ -35,11 +35,11 @@ ON CONFLICT (id) DO NOTHING;
 
 -- user_assignments (only customer_staff users; Anna Weber assigned to 2 customers)
 INSERT INTO user_assignments (id, user_id, customer_id, role, email, phone, notes) VALUES
-    ('00000000-0000-0000-0000-000000000401', '00000000-0000-0000-0000-000000000201', '00000000-0000-0000-0000-000000000101', 'IT-Ansprechpartner', 'h.mueller@mueller-gmbh.de', '+49 89 1234567', 'Primary IT contact, available Mon-Fri.'),
-    ('00000000-0000-0000-0000-000000000402', '00000000-0000-0000-0000-000000000202', '00000000-0000-0000-0000-000000000101', 'Buchhaltung', 'a.weber@mueller-gmbh.de', '+49 89 1234568', 'Handles license purchases and invoices.'),
-    ('00000000-0000-0000-0000-000000000403', '00000000-0000-0000-0000-000000000203', '00000000-0000-0000-0000-000000000102', 'Managing Partner', 'k.schmidt@schmidt-partner.de', '+49 30 9876543', 'Decision maker for all IT purchases.'),
-    ('00000000-0000-0000-0000-000000000404', '00000000-0000-0000-0000-000000000204', '00000000-0000-0000-0000-000000000103', 'CTO', 'l.berger@techstart.de', '+49 40 5551234', 'Technical lead, approves all infrastructure changes.'),
-    ('00000000-0000-0000-0000-000000000405', '00000000-0000-0000-0000-000000000202', '00000000-0000-0000-0000-000000000103', 'IT Consultant', 'a.weber@techstart.de', '+49 40 5551235', 'External consultant, on-site Tuesdays.')
+    ('00000000-0000-0000-0000-000000000401', '00000000-0000-0000-0000-000000000201', '00000000-0000-0000-0000-000000000101', 'IT-Ansprechpartner', 'h.mueller@mueller-ag.ch', '+41 44 123 45 67', 'Primary IT contact, available Mon-Fri.'),
+    ('00000000-0000-0000-0000-000000000402', '00000000-0000-0000-0000-000000000202', '00000000-0000-0000-0000-000000000101', 'Buchhaltung', 'a.weber@mueller-ag.ch', '+41 44 123 45 68', 'Handles license purchases and invoices.'),
+    ('00000000-0000-0000-0000-000000000403', '00000000-0000-0000-0000-000000000203', '00000000-0000-0000-0000-000000000102', 'Managing Partner', 'k.schmidt@schmidt-partner.ch', '+41 31 987 65 43', 'Decision maker for all IT purchases.'),
+    ('00000000-0000-0000-0000-000000000404', '00000000-0000-0000-0000-000000000204', '00000000-0000-0000-0000-000000000103', 'CTO', 'l.berger@techstart.ch', '+41 61 555 12 34', 'Technical lead, approves all infrastructure changes.'),
+    ('00000000-0000-0000-0000-000000000405', '00000000-0000-0000-0000-000000000202', '00000000-0000-0000-0000-000000000103', 'IT Consultant', 'a.weber@techstart.ch', '+41 61 555 12 35', 'External consultant, on-site Tuesdays.')
 ON CONFLICT (id) DO NOTHING;
 
 -- assets (category_id resolved by name subquery)
@@ -59,7 +59,7 @@ INSERT INTO licenses (id, customer_id, user_assignment_id, product_name, license
     ('00000000-0000-0000-0000-000000000601', '00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000401', 'Microsoft 365 Business', 'M365-MUE-2024-ABCD', 25, '2025-01-01', '2026-12-31'),
     ('00000000-0000-0000-0000-000000000602', '00000000-0000-0000-0000-000000000101', NULL, 'Adobe Creative Cloud', 'ACC-MUE-2025-EFGH', 5, '2025-06-01', '2026-05-31'),
     ('00000000-0000-0000-0000-000000000603', '00000000-0000-0000-0000-000000000102', '00000000-0000-0000-0000-000000000403', 'Microsoft 365 Business', 'M365-SCH-2025-IJKL', 10, '2025-03-01', '2026-02-28'),
-    ('00000000-0000-0000-0000-000000000604', '00000000-0000-0000-0000-000000000102', NULL, 'DATEV Mittelstand', 'DAT-SCH-2025-MNOP', 3, '2025-01-01', '2025-12-31'),
+    ('00000000-0000-0000-0000-000000000604', '00000000-0000-0000-0000-000000000102', NULL, 'Abacus Business', 'ABA-SCH-2025-MNOP', 3, '2025-01-01', '2025-12-31'),
     ('00000000-0000-0000-0000-000000000605', '00000000-0000-0000-0000-000000000103', '00000000-0000-0000-0000-000000000404', 'JetBrains All Products', 'JB-TECH-2025-QRST', 15, '2025-04-01', '2026-03-31'),
     ('00000000-0000-0000-0000-000000000606', '00000000-0000-0000-0000-000000000103', NULL, 'Slack Business+', 'SLK-TECH-2025-UVWX', 40, '2025-01-01', '2026-12-31')
 ON CONFLICT (id) DO NOTHING;
@@ -69,7 +69,7 @@ INSERT INTO customer_services (id, customer_id, service_id, customizations, note
     ('00000000-0000-0000-0000-000000000701', '00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000301', '{"sla": "8x5", "response_time_hours": 4}', 'Standard business hours support.'),
     ('00000000-0000-0000-0000-000000000702', '00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000302', '{"retention_days": 30, "storage_gb": 500}', 'Daily backups, 500 GB included.'),
     ('00000000-0000-0000-0000-000000000703', '00000000-0000-0000-0000-000000000102', '00000000-0000-0000-0000-000000000301', '{"sla": "24x7", "response_time_hours": 1}', 'Premium 24/7 support — law firm requires guaranteed uptime.'),
-    ('00000000-0000-0000-0000-000000000704', '00000000-0000-0000-0000-000000000102', '00000000-0000-0000-0000-000000000303', '{"frequency": "quarterly", "include_pentest": true}', 'GDPR compliance requirement, quarterly audits with penetration testing.')
+    ('00000000-0000-0000-0000-000000000704', '00000000-0000-0000-0000-000000000102', '00000000-0000-0000-0000-000000000303', '{"frequency": "quarterly", "include_pentest": true}', 'DSG compliance requirement, quarterly audits with penetration testing.')
 ON CONFLICT (id) DO NOTHING;
 
 -- +goose Down
