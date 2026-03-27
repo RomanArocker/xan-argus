@@ -46,6 +46,7 @@ func main() {
 	assetRepo := repository.NewAssetRepository(pool)
 	licenseRepo := repository.NewLicenseRepository(pool)
 	customerServiceRepo := repository.NewCustomerServiceRepository(pool)
+	hardwareCategoryRepo := repository.NewHardwareCategoryRepository(pool)
 
 	// Router
 	mux := http.NewServeMux()
@@ -69,9 +70,10 @@ func main() {
 	handler.NewUserHandler(userRepo).RegisterRoutes(mux)
 	handler.NewServiceHandler(serviceRepo).RegisterRoutes(mux)
 	handler.NewUserAssignmentHandler(userAssignmentRepo).RegisterRoutes(mux)
-	handler.NewAssetHandler(assetRepo).RegisterRoutes(mux)
+	handler.NewAssetHandler(assetRepo, hardwareCategoryRepo).RegisterRoutes(mux)
 	handler.NewLicenseHandler(licenseRepo).RegisterRoutes(mux)
 	handler.NewCustomerServiceHandler(customerServiceRepo).RegisterRoutes(mux)
+	handler.NewHardwareCategoryHandler(hardwareCategoryRepo).RegisterRoutes(mux)
 
 	// Static files
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
