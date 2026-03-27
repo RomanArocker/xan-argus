@@ -60,6 +60,7 @@ func (h *UserAssignmentHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "role is required")
 		return
 	}
+	// Validate early for user-friendly errors; DB trigger is the safety net.
 	userType, err := h.repo.GetUserType(r.Context(), input.UserID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

@@ -1,5 +1,3 @@
--- db/migrations/004_user_assignment_type_check.sql
-
 -- +goose Up
 
 -- +goose StatementBegin
