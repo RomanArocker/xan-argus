@@ -1,0 +1,17 @@
+{{define "category_rows"}}
+{{range .}}
+<tr>
+    <td><a href="/categories/{{uuidStr .ID}}/edit">{{.Name}}</a></td>
+    <td>{{pgText .Description}}</td>
+    <td>{{len .Fields}}</td>
+    <td>{{formatDateTime .CreatedAt}}</td>
+    <td class="text-right">
+        <a href="/categories/{{uuidStr .ID}}/edit" class="btn btn-primary btn-sm">Edit</a>
+        <button class="btn btn-danger btn-sm"
+                hx-delete="/api/v1/hardware-categories/{{uuidStr .ID}}"
+                hx-confirm="Delete category '{{.Name}}'? Assets using it will become uncategorized."
+                hx-target="closest tr" hx-swap="outerHTML swap:0.3s">Delete</button>
+    </td>
+</tr>
+{{else}}<tr><td colspan="5" class="text-muted">No categories defined.</td></tr>{{end}}
+{{end}}
