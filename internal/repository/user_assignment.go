@@ -93,3 +93,14 @@ func (r *UserAssignmentRepository) Delete(ctx context.Context, id pgtype.UUID) e
 	}
 	return nil
 }
+
+func (r *UserAssignmentRepository) GetUserType(ctx context.Context, userID pgtype.UUID) (string, error) {
+	var userType string
+	err := r.pool.QueryRow(ctx,
+		`SELECT type FROM users WHERE id = $1`, userID,
+	).Scan(&userType)
+	if err != nil {
+		return "", fmt.Errorf("getting user type: %w", err)
+	}
+	return userType, nil
+}

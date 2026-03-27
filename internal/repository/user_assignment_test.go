@@ -95,6 +95,43 @@ func TestUserAssignmentCRUD(t *testing.T) {
 	}
 }
 
+func TestGetUserType(t *testing.T) {
+	pool := setupTestDB(t)
+	ctx := context.Background()
+
+	userRepo := repository.NewUserRepository(pool)
+
+	customerStaff, err := userRepo.Create(ctx, model.CreateUserInput{Type: "customer_staff", FirstName: "CS", LastName: "User"})
+	if err != nil {
+		t.Fatalf("Create customer_staff: %v", err)
+	}
+	t.Cleanup(func() { userRepo.Delete(ctx, customerStaff.ID) }) //nolint:errcheck
+
+	internalStaff, err := userRepo.Create(ctx, model.CreateUserInput{Type: "internal_staff", FirstName: "IS", LastName: "User"})
+	if err != nil {
+		t.Fatalf("Create internal_staff: %v", err)
+	}
+	t.Cleanup(func() { userRepo.Delete(ctx, internalStaff.ID) }) //nolint:errcheck
+
+	repo := repository.NewUserAssignmentRepository(pool)
+
+	typ, err := repo.GetUserType(ctx, customerStaff.ID)
+	if err != nil {
+		t.Fatalf("GetUserType customer_staff: %v", err)
+	}
+	if typ != "customer_staff" {
+		t.Errorf("got %q, want %q", typ, "customer_staff")
+	}
+
+	typ, err = repo.GetUserType(ctx, internalStaff.ID)
+	if err != nil {
+		t.Fatalf("GetUserType internal_staff: %v", err)
+	}
+	if typ != "internal_staff" {
+		t.Errorf("got %q, want %q", typ, "internal_staff")
+	}
+}
+
 func TestUserAssignmentRejectsInternalStaff(t *testing.T) {
 	pool := setupTestDB(t)
 	ctx := context.Background()
