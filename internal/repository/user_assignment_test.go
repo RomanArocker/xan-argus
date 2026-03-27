@@ -21,7 +21,7 @@ func TestUserAssignmentCRUD(t *testing.T) {
 	t.Cleanup(func() { customerRepo.Delete(ctx, customer.ID) }) //nolint:errcheck
 
 	userRepo := repository.NewUserRepository(pool)
-	user, err := userRepo.Create(ctx, model.CreateUserInput{Type: "employee", FirstName: "UA", LastName: "TestUser"})
+	user, err := userRepo.Create(ctx, model.CreateUserInput{Type: "customer_staff", FirstName: "UA", LastName: "TestUser"})
 	if err != nil {
 		t.Fatalf("Create user: %v", err)
 	}
@@ -92,5 +92,34 @@ func TestUserAssignmentCRUD(t *testing.T) {
 	_, err = repo.GetByID(ctx, assignment.ID)
 	if err == nil {
 		t.Error("GetByID after Delete should return error")
+	}
+}
+
+func TestUserAssignmentRejectsInternalStaff(t *testing.T) {
+	pool := setupTestDB(t)
+	ctx := context.Background()
+
+	customerRepo := repository.NewCustomerRepository(pool)
+	customer, err := customerRepo.Create(ctx, model.CreateCustomerInput{Name: "Type Check Customer"})
+	if err != nil {
+		t.Fatalf("Create customer: %v", err)
+	}
+	t.Cleanup(func() { customerRepo.Delete(ctx, customer.ID) }) //nolint:errcheck
+
+	userRepo := repository.NewUserRepository(pool)
+	internalUser, err := userRepo.Create(ctx, model.CreateUserInput{Type: "internal_staff", FirstName: "Internal", LastName: "User"})
+	if err != nil {
+		t.Fatalf("Create internal user: %v", err)
+	}
+	t.Cleanup(func() { userRepo.Delete(ctx, internalUser.ID) }) //nolint:errcheck
+
+	repo := repository.NewUserAssignmentRepository(pool)
+	_, err = repo.Create(ctx, model.CreateUserAssignmentInput{
+		UserID:     internalUser.ID,
+		CustomerID: customer.ID,
+		Role:       "admin",
+	})
+	if err == nil {
+		t.Fatal("expected error when assigning internal_staff to customer, got nil")
 	}
 }
