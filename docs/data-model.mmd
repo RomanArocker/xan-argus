@@ -32,10 +32,11 @@ erDiagram
     assets {
         UUID id PK
         UUID customer_id FK
-        enum type "hardware | software"
+        UUID category_id FK "nullable"
         string name
         text description
         jsonb metadata
+        jsonb field_values
         timestamp created_at
         timestamp updated_at
     }
@@ -71,6 +72,25 @@ erDiagram
         timestamp updated_at
     }
 
+    hardware_categories {
+        UUID id PK
+        string name
+        text description
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    category_field_definitions {
+        UUID id PK
+        UUID category_id FK
+        string name
+        enum field_type "text | number | date | boolean"
+        boolean required
+        int sort_order
+        timestamp created_at
+        timestamp updated_at
+    }
+
     customers ||--o{ user_assignments : "has staff"
     users ||--o{ user_assignments : "assigned to"
     customers ||--o{ assets : "owns"
@@ -78,3 +98,5 @@ erDiagram
     user_assignments ||--o{ licenses : "assigned to (optional)"
     customers ||--o{ customer_services : "subscribes"
     services ||--o{ customer_services : "offered as"
+    hardware_categories ||--o{ category_field_definitions : "defines fields"
+    hardware_categories ||--o{ assets : "categorizes"
