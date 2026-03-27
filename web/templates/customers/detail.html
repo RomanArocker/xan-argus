@@ -1,10 +1,10 @@
 {{define "content"}}
-<div class="page-header">
+<header class="page-header">
     <h1>{{.Customer.Name}}</h1>
     <div class="flex gap-1">
         <a href="/customers/{{uuidStr .Customer.ID}}/edit" class="btn btn-primary">Edit</a>
     </div>
-</div>
+</header>
 
 <div class="card mb-1">
     <dl>
@@ -14,8 +14,8 @@
     </dl>
 </div>
 
-<div class="section">
-    <div class="page-header"><h2>Assets</h2></div>
+<section class="section">
+    <header class="page-header"><h2>Assets</h2></header>
     <div class="card">
         <table>
             <thead><tr><th>Name</th><th>Category</th><th>Description</th><th>Created</th><th></th></tr></thead>
@@ -34,7 +34,7 @@
         <form class="card mt-1" id="add-asset-form"
               hx-post="/api/v1/customers/{{uuidStr .Customer.ID}}/assets"
               hx-ext="json-enc" hx-target="#form-msg-asset" hx-swap="innerHTML">
-            <div id="form-msg-asset"></div>
+            <div id="form-msg-asset" aria-live="polite"></div>
             <div class="form-group"><label>Name *</label><input type="text" name="name" required></div>
             <div class="form-group"><label>Category</label>
                 <select name="category_id">
@@ -46,10 +46,10 @@
             <button type="submit" class="btn btn-primary btn-sm">Save</button>
         </form>
     </details>
-</div>
+</section>
 
-<div class="section">
-    <div class="page-header"><h2>Licenses</h2></div>
+<section class="section">
+    <header class="page-header"><h2>Licenses</h2></header>
     <div class="card">
         <table>
             <thead><tr><th>Product</th><th>Quantity</th><th>Valid From</th><th>Valid Until</th><th></th></tr></thead>
@@ -68,17 +68,17 @@
         <form class="card mt-1" id="add-license-form"
               hx-post="/api/v1/customers/{{uuidStr .Customer.ID}}/licenses"
               hx-ext="json-enc" hx-target="#form-msg-license" hx-swap="innerHTML">
-            <div id="form-msg-license"></div>
+            <div id="form-msg-license" aria-live="polite"></div>
             <div class="form-group"><label>Product Name *</label><input type="text" name="product_name" required></div>
             <div class="form-group"><label>License Key</label><input type="text" name="license_key"></div>
             <div class="form-group"><label>Quantity *</label><input type="number" name="quantity" value="1" min="1" required></div>
             <button type="submit" class="btn btn-primary btn-sm">Save</button>
         </form>
     </details>
-</div>
+</section>
 
-<div class="section">
-    <div class="page-header"><h2>Assigned Users</h2></div>
+<section class="section">
+    <header class="page-header"><h2>Assigned Users</h2></header>
     <div class="card">
         <table>
             <thead><tr><th>Role</th><th>Email</th><th>Phone</th><th></th></tr></thead>
@@ -97,7 +97,7 @@
         <form class="card mt-1" id="add-assignment-form"
               hx-post="/api/v1/customers/{{uuidStr .Customer.ID}}/user-assignments"
               hx-ext="json-enc" hx-target="#form-msg-assign" hx-swap="innerHTML">
-            <div id="form-msg-assign"></div>
+            <div id="form-msg-assign" aria-live="polite"></div>
             <div class="form-group"><label>User *</label>
                 <select name="user_id" required>
                     <option value="">Please select</option>
@@ -110,10 +110,10 @@
             <button type="submit" class="btn btn-primary btn-sm">Save</button>
         </form>
     </details>
-</div>
+</section>
 
-<div class="section">
-    <div class="page-header"><h2>Subscribed Services</h2></div>
+<section class="section">
+    <header class="page-header"><h2>Subscribed Services</h2></header>
     <div class="card">
         <table>
             <thead><tr><th>Notes</th><th>Created</th><th></th></tr></thead>
@@ -132,7 +132,7 @@
         <form class="card mt-1" id="add-cs-form"
               hx-post="/api/v1/customers/{{uuidStr .Customer.ID}}/services"
               hx-ext="json-enc" hx-target="#form-msg-cs" hx-swap="innerHTML">
-            <div id="form-msg-cs"></div>
+            <div id="form-msg-cs" aria-live="polite"></div>
             <div class="form-group"><label>Service *</label>
                 <select name="service_id" required>
                     <option value="">Please select</option>
@@ -143,7 +143,7 @@
             <button type="submit" class="btn btn-primary btn-sm">Save</button>
         </form>
     </details>
-</div>
+</section>
 <script>
     document.body.addEventListener('htmx:afterRequest', function(evt) {
         var formIds = ['add-asset-form', 'add-license-form', 'add-assignment-form', 'add-cs-form'];
@@ -157,7 +157,7 @@
             var msg = 'Error saving';
             try { msg = JSON.parse(evt.detail.xhr.responseText).error || msg; } catch(e) {}
             var target = evt.detail.elt.querySelector('[id^="form-msg"]');
-            if (target) target.innerHTML = '<div class="alert alert-error">' + msg + '</div>';
+            if (target) target.innerHTML = '<div class="alert alert-error" role="alert">' + msg + '</div>';
         }
     });
 </script>
