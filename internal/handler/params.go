@@ -13,3 +13,12 @@ func parseUUID(s string) (pgtype.UUID, error) {
 	}
 	return id, nil
 }
+
+// uuidToStr formats a pgtype.UUID as a lowercase hex string.
+func uuidToStr(u pgtype.UUID) string {
+	if !u.Valid {
+		return ""
+	}
+	b := u.Bytes
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}

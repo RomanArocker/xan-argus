@@ -36,12 +36,12 @@ func newFuncMap() template.FuncMap {
 			}
 			return t.String
 		},
-		"uuidStr": func(u pgtype.UUID) string {
-			if !u.Valid {
-				return ""
+		"uuidStr": uuidToStr,
+		"mapGet": func(m map[string]string, key string) string {
+			if v, ok := m[key]; ok {
+				return v
 			}
-			b := u.Bytes
-			return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+			return ""
 		},
 		"lower": strings.ToLower,
 		"default": func(def string, val string) string {
@@ -63,6 +63,7 @@ func NewTemplateEngine(templateDir string) (*TemplateEngine, error) {
 		filepath.Join(templateDir, "customers", "list_rows.html"),
 		filepath.Join(templateDir, "users", "list_rows.html"),
 		filepath.Join(templateDir, "services", "list_rows.html"),
+		filepath.Join(templateDir, "categories", "list_rows.html"),
 	}
 
 	// Page templates: each gets layout + all partials + its own content
@@ -76,6 +77,8 @@ func NewTemplateEngine(templateDir string) (*TemplateEngine, error) {
 		filepath.Join(templateDir, "users", "form.html"),
 		filepath.Join(templateDir, "services", "list.html"),
 		filepath.Join(templateDir, "services", "form.html"),
+		filepath.Join(templateDir, "categories", "list.html"),
+		filepath.Join(templateDir, "categories", "form.html"),
 	}
 
 	for _, pf := range pageFiles {
