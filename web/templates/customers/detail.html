@@ -29,6 +29,20 @@
             </tbody>
         </table>
     </div>
+    <details class="mt-1">
+        <summary class="btn btn-sm btn-primary">+ Add Asset</summary>
+        <form class="card mt-1" id="add-asset-form"
+              hx-post="/api/v1/customers/{{uuidStr .Customer.ID}}/assets"
+              hx-ext="json-enc" hx-target="#form-msg-asset" hx-swap="innerHTML">
+            <div id="form-msg-asset"></div>
+            <div class="form-group"><label>Name *</label><input type="text" name="name" required></div>
+            <div class="form-group"><label>Type *</label>
+                <select name="type" required><option value="hardware">Hardware</option><option value="software">Software</option></select>
+            </div>
+            <div class="form-group"><label>Description</label><textarea name="description"></textarea></div>
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </form>
+    </details>
 </div>
 
 <div class="section">
@@ -46,6 +60,18 @@
             </tbody>
         </table>
     </div>
+    <details class="mt-1">
+        <summary class="btn btn-sm btn-primary">+ Add License</summary>
+        <form class="card mt-1" id="add-license-form"
+              hx-post="/api/v1/customers/{{uuidStr .Customer.ID}}/licenses"
+              hx-ext="json-enc" hx-target="#form-msg-license" hx-swap="innerHTML">
+            <div id="form-msg-license"></div>
+            <div class="form-group"><label>Product Name *</label><input type="text" name="product_name" required></div>
+            <div class="form-group"><label>License Key</label><input type="text" name="license_key"></div>
+            <div class="form-group"><label>Quantity *</label><input type="number" name="quantity" value="1" min="1" required></div>
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </form>
+    </details>
 </div>
 
 <div class="section">
@@ -63,6 +89,24 @@
             </tbody>
         </table>
     </div>
+    <details class="mt-1">
+        <summary class="btn btn-sm btn-primary">+ Assign User</summary>
+        <form class="card mt-1" id="add-assignment-form"
+              hx-post="/api/v1/customers/{{uuidStr .Customer.ID}}/user-assignments"
+              hx-ext="json-enc" hx-target="#form-msg-assign" hx-swap="innerHTML">
+            <div id="form-msg-assign"></div>
+            <div class="form-group"><label>User *</label>
+                <select name="user_id" required>
+                    <option value="">Please select</option>
+                    {{range .Users}}<option value="{{uuidStr .ID}}">{{.LastName}}, {{.FirstName}}</option>{{end}}
+                </select>
+            </div>
+            <div class="form-group"><label>Role *</label><input type="text" name="role" required></div>
+            <div class="form-group"><label>Email</label><input type="email" name="email"></div>
+            <div class="form-group"><label>Phone</label><input type="text" name="phone"></div>
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </form>
+    </details>
 </div>
 
 <div class="section">
@@ -80,5 +124,38 @@
             </tbody>
         </table>
     </div>
+    <details class="mt-1">
+        <summary class="btn btn-sm btn-primary">+ Subscribe Service</summary>
+        <form class="card mt-1" id="add-cs-form"
+              hx-post="/api/v1/customers/{{uuidStr .Customer.ID}}/services"
+              hx-ext="json-enc" hx-target="#form-msg-cs" hx-swap="innerHTML">
+            <div id="form-msg-cs"></div>
+            <div class="form-group"><label>Service *</label>
+                <select name="service_id" required>
+                    <option value="">Please select</option>
+                    {{range .AllServices}}<option value="{{uuidStr .ID}}">{{.Name}}</option>{{end}}
+                </select>
+            </div>
+            <div class="form-group"><label>Notes</label><textarea name="notes"></textarea></div>
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </form>
+    </details>
 </div>
+<script>
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        var formIds = ['add-asset-form', 'add-license-form', 'add-assignment-form', 'add-cs-form'];
+        if (formIds.includes(evt.detail.elt.id) && evt.detail.successful) {
+            window.location.reload();
+        }
+    });
+    document.body.addEventListener('htmx:responseError', function(evt) {
+        var formIds = ['add-asset-form', 'add-license-form', 'add-assignment-form', 'add-cs-form'];
+        if (formIds.includes(evt.detail.elt.id)) {
+            var msg = 'Error saving';
+            try { msg = JSON.parse(evt.detail.xhr.responseText).error || msg; } catch(e) {}
+            var target = evt.detail.elt.querySelector('[id^="form-msg"]');
+            if (target) target.innerHTML = '<div class="alert alert-error">' + msg + '</div>';
+        }
+    });
+</script>
 {{end}}
