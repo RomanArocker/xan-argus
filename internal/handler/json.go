@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/xan-com/xan-pythia/internal/model"
+	"github.com/xan-com/xan-argus/internal/model"
 )
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

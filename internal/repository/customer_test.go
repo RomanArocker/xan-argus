@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 func setupTestDB(t *testing.T) *pgxpool.Pool {

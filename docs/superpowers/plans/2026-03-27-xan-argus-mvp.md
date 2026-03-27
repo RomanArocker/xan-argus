@@ -1,4 +1,4 @@
-# XAN-Pythia MVP Implementation Plan
+# XAN-Argus MVP Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Go 1.23, PostgreSQL 18.3, pgx v5, goose migrations, HTMX, Docker Compose
 
-**Spec:** `docs/superpowers/specs/2026-03-27-xan-pythia-design.md`
+**Spec:** `docs/superpowers/specs/2026-03-27-xan-argus-design.md`
 **Data Model:** `docs/data-model.mmd`
 
 ---
@@ -27,7 +27,7 @@
 - [ ] **Step 1: Initialize Go module**
 
 ```bash
-go mod init github.com/xan-com/xan-pythia
+go mod init github.com/xan-com/xan-argus
 ```
 
 - [ ] **Step 2: Create directory structure**
@@ -102,13 +102,13 @@ WORKDIR /app
 COPY go.mod go.sum* ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o /xan-pythia ./cmd/server/
+RUN CGO_ENABLED=0 go build -o /xan-argus ./cmd/server/
 
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates
-COPY --from=builder /xan-pythia /xan-pythia
+COPY --from=builder /xan-argus /xan-argus
 EXPOSE 8080
-CMD ["/xan-pythia"]
+CMD ["/xan-argus"]
 ```
 
 - [ ] **Step 2: Create .dockerignore**
@@ -128,15 +128,15 @@ services:
   db:
     image: postgres:18-alpine
     environment:
-      POSTGRES_DB: xanpythia
-      POSTGRES_USER: xanpythia
-      POSTGRES_PASSWORD: xanpythia
+      POSTGRES_DB: xanargus
+      POSTGRES_USER: xanargus
+      POSTGRES_PASSWORD: xanargus
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U xanpythia"]
+      test: ["CMD-SHELL", "pg_isready -U xanargus"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -146,7 +146,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DATABASE_URL: postgres://xanpythia:xanpythia@db:5432/xanpythia?sslmode=disable
+      DATABASE_URL: postgres://xanargus:xanargus@db:5432/xanargus?sslmode=disable
       PORT: "8080"
     depends_on:
       db:
@@ -261,7 +261,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/xan-com/xan-pythia/internal/database"
+	"github.com/xan-com/xan-argus/internal/database"
 )
 
 func main() {
@@ -393,7 +393,7 @@ DROP FUNCTION IF EXISTS set_updated_at;
 
 ```bash
 docker compose up db -d
-export DATABASE_URL="postgres://xanpythia:xanpythia@localhost:5432/xanpythia?sslmode=disable"
+export DATABASE_URL="postgres://xanargus:xanargus@localhost:5432/xanargus?sslmode=disable"
 go run ./cmd/server/ &
 # Check logs for "Migrations completed"
 kill %1
@@ -531,7 +531,7 @@ DROP FUNCTION IF EXISTS check_license_customer_consistency;
 - [ ] **Step 2: Verify migration runs**
 
 ```bash
-export DATABASE_URL="postgres://xanpythia:xanpythia@localhost:5432/xanpythia?sslmode=disable"
+export DATABASE_URL="postgres://xanargus:xanargus@localhost:5432/xanargus?sslmode=disable"
 go run ./cmd/server/ &
 # Check logs for "Migrations completed"
 kill %1
@@ -721,8 +721,8 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 func setupTestDB(t *testing.T) *pgxpool.Pool {
@@ -817,7 +817,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/xan-com/xan-pythia/internal/model"
+	"github.com/xan-com/xan-argus/internal/model"
 )
 
 type CustomerRepository struct {
@@ -905,7 +905,7 @@ func (r *CustomerRepository) Delete(ctx context.Context, id pgtype.UUID) error {
 - [ ] **Step 4: Run tests with test database**
 
 ```bash
-export TEST_DATABASE_URL="postgres://xanpythia:xanpythia@localhost:5432/xanpythia?sslmode=disable"
+export TEST_DATABASE_URL="postgres://xanargus:xanargus@localhost:5432/xanargus?sslmode=disable"
 go test ./internal/repository/... -v -run TestCustomerCRUD
 ```
 
@@ -940,7 +940,7 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/xan-com/xan-pythia/internal/model"
+	"github.com/xan-com/xan-argus/internal/model"
 )
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
@@ -1018,8 +1018,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/xan-com/xan-pythia/internal/handler"
-	"github.com/xan-com/xan-pythia/internal/model"
+	"github.com/xan-com/xan-argus/internal/handler"
+	"github.com/xan-com/xan-argus/internal/model"
 )
 
 func TestCustomerHandler_Create(t *testing.T) {
@@ -1063,8 +1063,8 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 type CustomerHandler struct {
@@ -1208,8 +1208,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 func TestUserCRUD(t *testing.T) {
@@ -1288,7 +1288,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/xan-com/xan-pythia/internal/model"
+	"github.com/xan-com/xan-argus/internal/model"
 )
 
 type UserRepository struct {
@@ -1394,8 +1394,8 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 type UserHandler struct {
@@ -1540,8 +1540,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 func TestServiceCRUD(t *testing.T) {
@@ -1603,7 +1603,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/xan-com/xan-pythia/internal/model"
+	"github.com/xan-com/xan-argus/internal/model"
 )
 
 type ServiceRepository struct {
@@ -1693,8 +1693,8 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 type ServiceHandler struct {
@@ -2020,8 +2020,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 func TestUserAssignmentCRUD(t *testing.T) {
@@ -2110,7 +2110,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/xan-com/xan-pythia/internal/model"
+	"github.com/xan-com/xan-argus/internal/model"
 )
 
 type UserAssignmentRepository struct {
@@ -2204,8 +2204,8 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 type UserAssignmentHandler struct {
@@ -2364,8 +2364,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 func TestAssetCRUD(t *testing.T) {
@@ -2446,7 +2446,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/xan-com/xan-pythia/internal/model"
+	"github.com/xan-com/xan-argus/internal/model"
 )
 
 type AssetRepository struct {
@@ -2554,8 +2554,8 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 type AssetHandler struct {
@@ -2710,8 +2710,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 func TestLicenseCRUD(t *testing.T) {
@@ -2836,7 +2836,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/xan-com/xan-pythia/internal/model"
+	"github.com/xan-com/xan-argus/internal/model"
 )
 
 type LicenseRepository struct {
@@ -2934,8 +2934,8 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 type LicenseHandler struct {
@@ -3092,8 +3092,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 func TestCustomerServiceCRUD(t *testing.T) {
@@ -3174,7 +3174,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/xan-com/xan-pythia/internal/model"
+	"github.com/xan-com/xan-argus/internal/model"
 )
 
 type CustomerServiceRepository struct {
@@ -3268,8 +3268,8 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 type CustomerServiceHandler struct {
@@ -3477,10 +3477,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/xan-com/xan-pythia/internal/database"
-	"github.com/xan-com/xan-pythia/internal/handler"
-	"github.com/xan-com/xan-pythia/internal/middleware"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/database"
+	"github.com/xan-com/xan-argus/internal/handler"
+	"github.com/xan-com/xan-argus/internal/middleware"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 func main() {

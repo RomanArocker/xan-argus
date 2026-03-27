@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/xan-com/xan-pythia/internal/model"
+	"github.com/xan-com/xan-argus/internal/model"
 )
 
 func validateFieldValues(rawValues json.RawMessage, fields []model.FieldDefinition) string {

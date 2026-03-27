@@ -1,4 +1,4 @@
-module github.com/xan-com/xan-pythia
+module github.com/xan-com/xan-argus
 
 go 1.26.1
 

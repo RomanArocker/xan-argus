@@ -1,8 +1,8 @@
-# XAN-Pythia — Design Specification
+# XAN-Argus — Design Specification
 
 ## Overview
 
-XAN-Pythia is a multi-tenant asset, user, license, and service management system for an IT services business. It serves as a central database and lookup tool to track what each customer has, who works there, what licenses they hold, and which services they subscribe to.
+XAN-Argus is a multi-tenant asset, user, license, and service management system for an IT services business. It serves as a central database and lookup tool to track what each customer has, who works there, what licenses they hold, and which services they subscribe to.
 
 **MVP Scope:** CRUD operations, search, and overview. No active features (notifications, reports, dashboards) in the initial version.
 
@@ -183,7 +183,7 @@ Instance of a service for a specific customer, with optional customizations.
 ## Project Structure
 
 ```
-xan-pythia/
+xan-argus/
 ├── cmd/
 │   └── server/
 │       └── main.go              # Entry point

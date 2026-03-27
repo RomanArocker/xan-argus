@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 func TestUserAssignmentCRUD(t *testing.T) {

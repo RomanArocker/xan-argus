@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/xan-com/xan-pythia/internal/model"
+	"github.com/xan-com/xan-argus/internal/model"
 )
 
 func makeFieldDef(id string, name string, fieldType string) model.FieldDefinition {

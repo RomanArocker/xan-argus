@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/xan-com/xan-pythia/internal/database"
-	"github.com/xan-com/xan-pythia/internal/handler"
-	"github.com/xan-com/xan-pythia/internal/middleware"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/database"
+	"github.com/xan-com/xan-argus/internal/handler"
+	"github.com/xan-com/xan-argus/internal/middleware"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 func main() {

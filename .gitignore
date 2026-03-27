@@ -28,11 +28,11 @@
 .DS_Store
 Thumbs.db
 
-# Claude Code personal settings
+# Claude Code
 CLAUDE.md
 CLAUDE.local.md
 .claude/
-.claude/settings.local.json
 
 # Playwright CLI (browser automation artifacts)
+playwright-cli.json
 .playwright-cli/

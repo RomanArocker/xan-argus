@@ -1,4 +1,4 @@
-# XAN-Pythia
+# XAN-Argus
 
 Multi-tenant asset, user, license, and service management system for IT services businesses.
 
@@ -120,7 +120,7 @@ All tables have `set_updated_at()` triggers and UUID primary keys. Foreign keys 
 # Prerequisites: Go 1.26+, Docker
 
 # Run locally (needs PostgreSQL)
-export DATABASE_URL="postgres://user:pass@localhost:5432/xanpythia?sslmode=disable"
+export DATABASE_URL="postgres://user:pass@localhost:5432/xanargus?sslmode=disable"
 go run ./cmd/server/
 
 # Static analysis
@@ -128,7 +128,7 @@ go vet ./...
 golangci-lint run ./...
 
 # Tests (needs test database)
-export TEST_DATABASE_URL="postgres://user:pass@localhost:5432/xanpythia_test?sslmode=disable"
+export TEST_DATABASE_URL="postgres://user:pass@localhost:5432/xanargus_test?sslmode=disable"
 go test ./...
 
 # Format

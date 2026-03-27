@@ -1,4 +1,4 @@
-# XAN-Pythia HTMX Frontend Implementation Plan
+# XAN-Argus HTMX Frontend Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -336,14 +336,14 @@ git commit -m "feat: add static assets (HTMX 2.0, CSS)"
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{if .Title}}{{.Title}} — {{end}}XAN-Pythia</title>
+    <title>{{if .Title}}{{.Title}} — {{end}}XAN-Argus</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="/static/js/htmx.min.js"></script>
 </head>
 <body>
     <nav>
         <div class="container">
-            <a href="/" class="brand">XAN-Pythia</a>
+            <a href="/" class="brand">XAN-Argus</a>
             <a href="/customers">Customers</a>
             <a href="/users">Users</a>
             <a href="/services">Services</a>
@@ -444,8 +444,8 @@ package handler
 import (
 	"net/http"
 
-	"github.com/xan-com/xan-pythia/internal/model"
-	"github.com/xan-com/xan-pythia/internal/repository"
+	"github.com/xan-com/xan-argus/internal/model"
+	"github.com/xan-com/xan-argus/internal/repository"
 )
 
 type PageHandler struct {
