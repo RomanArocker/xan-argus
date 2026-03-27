@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/xan-com/xan-pythia/internal/database"
+	"github.com/xan-com/xan-pythia/internal/handler"
+	"github.com/xan-com/xan-pythia/internal/middleware"
+	"github.com/xan-com/xan-pythia/internal/repository"
 )
 
 func main() {
@@ -36,14 +38,42 @@ func main() {
 	defer pool.Close()
 	log.Println("Database connected")
 
+	// Repositories
+	customerRepo := repository.NewCustomerRepository(pool)
+	userRepo := repository.NewUserRepository(pool)
+	serviceRepo := repository.NewServiceRepository(pool)
+	userAssignmentRepo := repository.NewUserAssignmentRepository(pool)
+	assetRepo := repository.NewAssetRepository(pool)
+	licenseRepo := repository.NewLicenseRepository(pool)
+	customerServiceRepo := repository.NewCustomerServiceRepository(pool)
+
+	// Router
 	mux := http.NewServeMux()
+
+	// Health
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, `{"status":"ok"}`)
+		w.Write([]byte(`{"status":"ok"}`))
 	})
 
+	// Register handlers
+	handler.NewCustomerHandler(customerRepo).RegisterRoutes(mux)
+	handler.NewUserHandler(userRepo).RegisterRoutes(mux)
+	handler.NewServiceHandler(serviceRepo).RegisterRoutes(mux)
+	handler.NewUserAssignmentHandler(userAssignmentRepo).RegisterRoutes(mux)
+	handler.NewAssetHandler(assetRepo).RegisterRoutes(mux)
+	handler.NewLicenseHandler(licenseRepo).RegisterRoutes(mux)
+	handler.NewCustomerServiceHandler(customerServiceRepo).RegisterRoutes(mux)
+
+	// Static files
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
+
+	// Middleware
+	srv := middleware.Logging(mux)
+
 	log.Printf("Starting server on :%s", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	if err := http.ListenAndServe(":"+port, srv); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
 }
