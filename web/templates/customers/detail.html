@@ -18,11 +18,11 @@
     <div class="page-header"><h2>Assets</h2></div>
     <div class="card">
         <table>
-            <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Created</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Category</th><th>Description</th><th>Created</th><th></th></tr></thead>
             <tbody>
                 {{range .Assets}}
                 <tr>
-                    <td>{{.Name}}</td><td>{{.Type}}</td><td>{{pgText .Description}}</td><td>{{formatDateTime .CreatedAt}}</td>
+                    <td>{{.Name}}</td><td>{{if .CategoryID.Valid}}{{mapGet $.CategoryMap (uuidStr .CategoryID)}}{{else}}<span class="text-muted">—</span>{{end}}</td><td>{{pgText .Description}}</td><td>{{formatDateTime .CreatedAt}}</td>
                     <td class="text-right"><button class="btn btn-danger btn-sm" hx-delete="/api/v1/assets/{{uuidStr .ID}}" hx-confirm="Delete asset '{{.Name}}'?" hx-target="closest tr" hx-swap="outerHTML swap:0.3s">Delete</button></td>
                 </tr>
                 {{else}}<tr><td colspan="5" class="text-muted">No assets.</td></tr>{{end}}
@@ -36,8 +36,11 @@
               hx-ext="json-enc" hx-target="#form-msg-asset" hx-swap="innerHTML">
             <div id="form-msg-asset"></div>
             <div class="form-group"><label>Name *</label><input type="text" name="name" required></div>
-            <div class="form-group"><label>Type *</label>
-                <select name="type" required><option value="hardware">Hardware</option><option value="software">Software</option></select>
+            <div class="form-group"><label>Category</label>
+                <select name="category_id">
+                    <option value="">No category</option>
+                    {{range $.AllCategories}}<option value="{{uuidStr .ID}}">{{.Name}}</option>{{end}}
+                </select>
             </div>
             <div class="form-group"><label>Description</label><textarea name="description"></textarea></div>
             <button type="submit" class="btn btn-primary btn-sm">Save</button>
