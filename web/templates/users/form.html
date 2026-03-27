@@ -1,0 +1,44 @@
+{{define "content"}}
+<div class="page-header">
+    <h1>{{if .IsNew}}New User{{else}}Edit User{{end}}</h1>
+</div>
+<div class="card">
+    <form id="user-form"
+          {{if .IsNew}}hx-post="/api/v1/users"{{else}}hx-put="/api/v1/users/{{uuidStr .User.ID}}"{{end}}
+          hx-ext="json-enc" hx-target="#form-message" hx-swap="innerHTML">
+        <div id="form-message"></div>
+        <div class="form-group">
+            <label for="type">Type *</label>
+            <select id="type" name="type" required>
+                <option value="">Please select</option>
+                <option value="customer_staff" {{if eq .User.Type "customer_staff"}}selected{{end}}>Customer Staff</option>
+                <option value="internal_staff" {{if eq .User.Type "internal_staff"}}selected{{end}}>Internal Staff</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="first_name">First Name *</label>
+            <input type="text" id="first_name" name="first_name" value="{{.User.FirstName}}" required>
+        </div>
+        <div class="form-group">
+            <label for="last_name">Last Name *</label>
+            <input type="text" id="last_name" name="last_name" value="{{.User.LastName}}" required>
+        </div>
+        <div class="flex gap-1">
+            <button type="submit" class="btn btn-primary">{{if .IsNew}}Create{{else}}Save{{end}}</button>
+            <a href="/users" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+<script>
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.elt.id === 'user-form' && evt.detail.successful) { window.location.href = '/users'; }
+    });
+    document.body.addEventListener('htmx:responseError', function(evt) {
+        if (evt.detail.elt.id === 'user-form') {
+            var msg = 'Error saving';
+            try { msg = JSON.parse(evt.detail.xhr.responseText).error || msg; } catch(e) {}
+            document.getElementById('form-message').innerHTML = '<div class="alert alert-error">' + msg + '</div>';
+        }
+    });
+</script>
+{{end}}

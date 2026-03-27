@@ -1,0 +1,17 @@
+{{define "content"}}
+<div class="page-header">
+    <h1>Services</h1>
+    <a href="/services/new" class="btn btn-primary">+ New Service</a>
+</div>
+<div class="search-bar">
+    <input type="search" name="q" placeholder="Search services..."
+           hx-get="/services/rows" hx-trigger="keyup changed delay:300ms"
+           hx-target="#service-rows" value="{{.Search}}">
+</div>
+<div class="card">
+    <table>
+        <thead><tr><th>Name</th><th>Description</th><th>Created</th><th></th></tr></thead>
+        <tbody id="service-rows">{{template "service_rows" .Services}}</tbody>
+    </table>
+</div>
+{{end}}

@@ -1,0 +1,15 @@
+{{define "user_rows"}}
+{{range .}}
+<tr>
+    <td>{{.LastName}}, {{.FirstName}}</td>
+    <td>{{if eq .Type "customer_staff"}}Customer{{else}}Internal{{end}}</td>
+    <td>{{formatDateTime .CreatedAt}}</td>
+    <td class="text-right">
+        <a href="/users/{{uuidStr .ID}}/edit" class="btn btn-sm">Edit</a>
+        <button class="btn btn-danger btn-sm" hx-delete="/api/v1/users/{{uuidStr .ID}}"
+                hx-confirm="Delete user '{{.FirstName}} {{.LastName}}'?"
+                hx-target="closest tr" hx-swap="outerHTML swap:0.3s">Delete</button>
+    </td>
+</tr>
+{{else}}<tr><td colspan="4" class="text-muted">No users found.</td></tr>{{end}}
+{{end}}

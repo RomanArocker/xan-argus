@@ -47,6 +47,16 @@ func (h *PageHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /customers/new", h.customerForm)
 	mux.HandleFunc("GET /customers/{id}", h.customerDetail)
 	mux.HandleFunc("GET /customers/{id}/edit", h.customerEditForm)
+	// User routes
+	mux.HandleFunc("GET /users", h.userList)
+	mux.HandleFunc("GET /users/rows", h.userListRows)
+	mux.HandleFunc("GET /users/new", h.userForm)
+	mux.HandleFunc("GET /users/{id}/edit", h.userEditForm)
+	// Service routes
+	mux.HandleFunc("GET /services", h.serviceList)
+	mux.HandleFunc("GET /services/rows", h.serviceListRows)
+	mux.HandleFunc("GET /services/new", h.serviceForm)
+	mux.HandleFunc("GET /services/{id}/edit", h.serviceEditForm)
 }
 
 func (h *PageHandler) home(w http.ResponseWriter, r *http.Request) {
@@ -136,4 +146,105 @@ func (h *PageHandler) customerEditForm(w http.ResponseWriter, r *http.Request) {
 		"IsNew":    false,
 	}
 	h.tmpl.Render(w, "layout", data)
+}
+
+func (h *PageHandler) userList(w http.ResponseWriter, r *http.Request) {
+	params := paginationParams(r)
+	users, err := h.userRepo.List(r.Context(), params)
+	if err != nil {
+		http.Error(w, "failed to load users", http.StatusInternalServerError)
+		return
+	}
+	h.tmpl.Render(w, "layout", map[string]any{
+		"Title":  "Users",
+		"Users":  users,
+		"Search": params.Search,
+		"Filter": params.Filter,
+	})
+}
+
+func (h *PageHandler) userListRows(w http.ResponseWriter, r *http.Request) {
+	params := paginationParams(r)
+	users, err := h.userRepo.List(r.Context(), params)
+	if err != nil {
+		http.Error(w, "failed to load users", http.StatusInternalServerError)
+		return
+	}
+	h.tmpl.Render(w, "user_rows", users)
+}
+
+func (h *PageHandler) userForm(w http.ResponseWriter, r *http.Request) {
+	h.tmpl.Render(w, "layout", map[string]any{
+		"Title": "New User",
+		"User":  model.User{},
+		"IsNew": true,
+	})
+}
+
+func (h *PageHandler) userEditForm(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid ID", http.StatusBadRequest)
+		return
+	}
+	user, err := h.userRepo.GetByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+	h.tmpl.Render(w, "layout", map[string]any{
+		"Title": "Edit User",
+		"User":  user,
+		"IsNew": false,
+	})
+}
+
+func (h *PageHandler) serviceList(w http.ResponseWriter, r *http.Request) {
+	params := paginationParams(r)
+	services, err := h.serviceRepo.List(r.Context(), params)
+	if err != nil {
+		http.Error(w, "failed to load services", http.StatusInternalServerError)
+		return
+	}
+	h.tmpl.Render(w, "layout", map[string]any{
+		"Title":    "Services",
+		"Services": services,
+		"Search":   params.Search,
+	})
+}
+
+func (h *PageHandler) serviceListRows(w http.ResponseWriter, r *http.Request) {
+	params := paginationParams(r)
+	services, err := h.serviceRepo.List(r.Context(), params)
+	if err != nil {
+		http.Error(w, "failed to load services", http.StatusInternalServerError)
+		return
+	}
+	h.tmpl.Render(w, "service_rows", services)
+}
+
+func (h *PageHandler) serviceForm(w http.ResponseWriter, r *http.Request) {
+	h.tmpl.Render(w, "layout", map[string]any{
+		"Title":   "New Service",
+		"Service": model.Service{},
+		"IsNew":   true,
+	})
+}
+
+func (h *PageHandler) serviceEditForm(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid ID", http.StatusBadRequest)
+		return
+	}
+	svc, err := h.serviceRepo.GetByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, "service not found", http.StatusNotFound)
+		return
+	}
+	h.tmpl.Render(w, "layout", map[string]any{
+		"Title":   "Edit Service",
+		"Service": svc,
+		"IsNew":   false,
+	})
 }
