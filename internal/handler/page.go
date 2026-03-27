@@ -8,14 +8,15 @@ import (
 )
 
 type PageHandler struct {
-	tmpl                *TemplateEngine
-	customerRepo        *repository.CustomerRepository
-	userRepo            *repository.UserRepository
-	serviceRepo         *repository.ServiceRepository
-	userAssignmentRepo  *repository.UserAssignmentRepository
-	assetRepo           *repository.AssetRepository
-	licenseRepo         *repository.LicenseRepository
-	customerServiceRepo *repository.CustomerServiceRepository
+	tmpl                 *TemplateEngine
+	customerRepo         *repository.CustomerRepository
+	userRepo             *repository.UserRepository
+	serviceRepo          *repository.ServiceRepository
+	userAssignmentRepo   *repository.UserAssignmentRepository
+	assetRepo            *repository.AssetRepository
+	licenseRepo          *repository.LicenseRepository
+	customerServiceRepo  *repository.CustomerServiceRepository
+	hardwareCategoryRepo *repository.HardwareCategoryRepository
 }
 
 func NewPageHandler(
@@ -27,16 +28,18 @@ func NewPageHandler(
 	assetRepo *repository.AssetRepository,
 	licenseRepo *repository.LicenseRepository,
 	customerServiceRepo *repository.CustomerServiceRepository,
+	hardwareCategoryRepo *repository.HardwareCategoryRepository,
 ) *PageHandler {
 	return &PageHandler{
-		tmpl:                tmpl,
-		customerRepo:        customerRepo,
-		userRepo:            userRepo,
-		serviceRepo:         serviceRepo,
-		userAssignmentRepo:  userAssignmentRepo,
-		assetRepo:           assetRepo,
-		licenseRepo:         licenseRepo,
-		customerServiceRepo: customerServiceRepo,
+		tmpl:                 tmpl,
+		customerRepo:         customerRepo,
+		userRepo:             userRepo,
+		serviceRepo:          serviceRepo,
+		userAssignmentRepo:   userAssignmentRepo,
+		assetRepo:            assetRepo,
+		licenseRepo:          licenseRepo,
+		customerServiceRepo:  customerServiceRepo,
+		hardwareCategoryRepo: hardwareCategoryRepo,
 	}
 }
 
@@ -55,6 +58,9 @@ func (h *PageHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /services/rows", h.serviceListRows)
 	mux.HandleFunc("GET /services/new", h.serviceForm)
 	mux.HandleFunc("GET /services/{id}/edit", h.serviceEditForm)
+	mux.HandleFunc("GET /categories", h.categoryList)
+	mux.HandleFunc("GET /categories/new", h.categoryForm)
+	mux.HandleFunc("GET /categories/{id}/edit", h.categoryEditForm)
 }
 
 func (h *PageHandler) home(w http.ResponseWriter, r *http.Request) {
@@ -111,6 +117,15 @@ func (h *PageHandler) customerDetail(w http.ResponseWriter, r *http.Request) {
 	customerServices, _ := h.customerServiceRepo.ListByCustomer(r.Context(), id, listParams)
 	users, _ := h.userRepo.List(r.Context(), model.ListParams{Limit: 100})
 	allServices, _ := h.serviceRepo.List(r.Context(), model.ListParams{Limit: 100})
+	categories, err := h.hardwareCategoryRepo.List(r.Context())
+	if err != nil {
+		http.Error(w, "failed to load categories", http.StatusInternalServerError)
+		return
+	}
+	categoryMap := make(map[string]string)
+	for _, cat := range categories {
+		categoryMap[uuidToStr(cat.ID)] = cat.Name
+	}
 
 	h.tmpl.RenderPage(w, "customers/detail", map[string]any{
 		"Title":            customer.Name,
@@ -121,6 +136,8 @@ func (h *PageHandler) customerDetail(w http.ResponseWriter, r *http.Request) {
 		"CustomerServices": customerServices,
 		"Users":            users,
 		"AllServices":      allServices,
+		"AllCategories":    categories,
+		"CategoryMap":      categoryMap,
 	})
 }
 
@@ -240,5 +257,51 @@ func (h *PageHandler) serviceEditForm(w http.ResponseWriter, r *http.Request) {
 		"Title":   "Edit Service",
 		"Service": svc,
 		"IsNew":   false,
+	})
+}
+
+func (h *PageHandler) categoryList(w http.ResponseWriter, r *http.Request) {
+	categories, err := h.hardwareCategoryRepo.List(r.Context())
+	if err != nil {
+		http.Error(w, "failed to load categories", http.StatusInternalServerError)
+		return
+	}
+	for i, cat := range categories {
+		fields, err := h.hardwareCategoryRepo.ListFields(r.Context(), cat.ID)
+		if err != nil {
+			http.Error(w, "failed to load fields", http.StatusInternalServerError)
+			return
+		}
+		categories[i].Fields = fields
+	}
+	h.tmpl.RenderPage(w, "categories/list", map[string]any{
+		"Title":      "Hardware Categories",
+		"Categories": categories,
+	})
+}
+
+func (h *PageHandler) categoryForm(w http.ResponseWriter, r *http.Request) {
+	h.tmpl.RenderPage(w, "categories/form", map[string]any{
+		"Title":    "New Category",
+		"Category": model.HardwareCategory{},
+		"IsNew":    true,
+	})
+}
+
+func (h *PageHandler) categoryEditForm(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid ID", http.StatusBadRequest)
+		return
+	}
+	cat, err := h.hardwareCategoryRepo.GetByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, "category not found", http.StatusNotFound)
+		return
+	}
+	h.tmpl.RenderPage(w, "categories/form", map[string]any{
+		"Title":    "Edit Category",
+		"Category": cat,
+		"IsNew":    false,
 	})
 }
