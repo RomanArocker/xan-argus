@@ -63,7 +63,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("loading templates: %v", err)
 	}
-	handler.NewPageHandler(tmpl, customerRepo, userRepo, serviceRepo, userAssignmentRepo, assetRepo, licenseRepo, customerServiceRepo).RegisterRoutes(mux)
+	handler.NewPageHandler(tmpl, customerRepo, userRepo, serviceRepo, userAssignmentRepo, assetRepo, licenseRepo, customerServiceRepo, hardwareCategoryRepo).RegisterRoutes(mux)
 
 	// Register handlers
 	handler.NewCustomerHandler(customerRepo).RegisterRoutes(mux)
