@@ -18,7 +18,7 @@ XAN-Pythia is a multi-tenant asset, user, license, and service management system
 | Component | Technology |
 |-----------|-----------|
 | Backend | Go (standard library + pgx) |
-| Database | PostgreSQL 16 |
+| Database | PostgreSQL 18.3 |
 | Frontend | HTMX + Go HTML Templates |
 | Deployment | Docker Compose (Go app + PostgreSQL) |
 | Migrations | goose (pure SQL) |
@@ -216,7 +216,7 @@ xan-pythia/
 
 Two containers:
 1. **app** — Go binary (multi-stage build: `golang:1.23` build stage → `alpine` runtime)
-2. **db** — PostgreSQL 16 with persistent volume
+2. **db** — PostgreSQL 18.3 with persistent volume
 
 ### Configuration
 

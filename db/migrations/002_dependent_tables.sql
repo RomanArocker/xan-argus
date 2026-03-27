@@ -57,6 +57,7 @@ CREATE TRIGGER trg_licenses_updated_at
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- License consistency trigger: ensure user_assignment belongs to same customer
+-- +goose StatementBegin
 CREATE OR REPLACE FUNCTION check_license_customer_consistency()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -79,6 +80,7 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+-- +goose StatementEnd
 
 CREATE TRIGGER trg_licenses_customer_consistency
     BEFORE INSERT OR UPDATE ON licenses

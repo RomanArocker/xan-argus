@@ -12,11 +12,12 @@ import (
 )
 
 type TemplateEngine struct {
-	templates *template.Template
+	pages    map[string]*template.Template // page templates (layout + content)
+	partials *template.Template            // standalone partials (rows, etc.)
 }
 
-func NewTemplateEngine(templateDir string) (*TemplateEngine, error) {
-	funcMap := template.FuncMap{
+func newFuncMap() template.FuncMap {
+	return template.FuncMap{
 		"formatDate": func(t time.Time) string {
 			return t.Format("02.01.2006")
 		},
@@ -50,33 +51,73 @@ func NewTemplateEngine(templateDir string) (*TemplateEngine, error) {
 			return val
 		},
 	}
-
-	patterns := []string{
-		filepath.Join(templateDir, "*.html"),
-		filepath.Join(templateDir, "customers", "*.html"),
-		filepath.Join(templateDir, "users", "*.html"),
-		filepath.Join(templateDir, "services", "*.html"),
-	}
-
-	tmpl := template.New("").Funcs(funcMap)
-	for _, pattern := range patterns {
-		matches, err := filepath.Glob(pattern)
-		if err != nil {
-			return nil, fmt.Errorf("globbing templates %s: %w", pattern, err)
-		}
-		if len(matches) > 0 {
-			if _, err := tmpl.ParseFiles(matches...); err != nil {
-				return nil, fmt.Errorf("parsing templates: %w", err)
-			}
-		}
-	}
-
-	return &TemplateEngine{templates: tmpl}, nil
 }
 
-func (e *TemplateEngine) Render(w http.ResponseWriter, name string, data any) {
+func NewTemplateEngine(templateDir string) (*TemplateEngine, error) {
+	layoutFile := filepath.Join(templateDir, "layout.html")
+	pages := make(map[string]*template.Template)
+
+	// Collect all partial files (list_rows.html) — these define named templates
+	// that page templates reference via {{template "customer_rows" ...}}
+	partialFiles := []string{
+		filepath.Join(templateDir, "customers", "list_rows.html"),
+		filepath.Join(templateDir, "users", "list_rows.html"),
+		filepath.Join(templateDir, "services", "list_rows.html"),
+	}
+
+	// Page templates: each gets layout + all partials + its own content
+	// This avoids "content" name collisions between pages while giving
+	// each page access to all partial templates it might reference
+	pageFiles := []string{
+		filepath.Join(templateDir, "customers", "list.html"),
+		filepath.Join(templateDir, "customers", "detail.html"),
+		filepath.Join(templateDir, "customers", "form.html"),
+		filepath.Join(templateDir, "users", "list.html"),
+		filepath.Join(templateDir, "users", "form.html"),
+		filepath.Join(templateDir, "services", "list.html"),
+		filepath.Join(templateDir, "services", "form.html"),
+	}
+
+	for _, pf := range pageFiles {
+		// Parse layout + all partials + this page's content template
+		files := append([]string{layoutFile}, partialFiles...)
+		files = append(files, pf)
+		t, err := template.New("").Funcs(newFuncMap()).ParseFiles(files...)
+		if err != nil {
+			return nil, fmt.Errorf("parsing page template %s: %w", pf, err)
+		}
+		name := filepath.Base(filepath.Dir(pf)) + "/" + strings.TrimSuffix(filepath.Base(pf), ".html")
+		pages[name] = t
+	}
+
+	// Standalone partials for HTMX row responses (no layout wrapper)
+	partials := template.New("").Funcs(newFuncMap())
+	for _, pf := range partialFiles {
+		if _, err := partials.ParseFiles(pf); err != nil {
+			return nil, fmt.Errorf("parsing partial %s: %w", pf, err)
+		}
+	}
+
+	return &TemplateEngine{pages: pages, partials: partials}, nil
+}
+
+// RenderPage renders a page template (layout + content) by page key (e.g., "customers/list")
+func (e *TemplateEngine) RenderPage(w http.ResponseWriter, page string, data any) {
+	t, ok := e.pages[page]
+	if !ok {
+		http.Error(w, "page not found: "+page, http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := e.templates.ExecuteTemplate(w, name, data); err != nil {
+	if err := t.ExecuteTemplate(w, "layout", data); err != nil {
+		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// RenderPartial renders a standalone partial template (e.g., "customer_rows")
+func (e *TemplateEngine) RenderPartial(w http.ResponseWriter, name string, data any) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := e.partials.ExecuteTemplate(w, name, data); err != nil {
 		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
 	}
 }

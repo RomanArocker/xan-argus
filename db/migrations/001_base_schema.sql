@@ -3,6 +3,7 @@
 -- +goose Up
 
 -- Shared trigger function for updated_at
+-- +goose StatementBegin
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -10,6 +11,7 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+-- +goose StatementEnd
 
 -- customers
 CREATE TABLE customers (
