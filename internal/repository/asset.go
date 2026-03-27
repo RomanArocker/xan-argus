@@ -105,7 +105,7 @@ func (r *AssetRepository) Delete(ctx context.Context, id pgtype.UUID) error {
 		return fmt.Errorf("deleting asset: %w", err)
 	}
 	if result.RowsAffected() == 0 {
-		return fmt.Errorf("asset not found")
+		return pgx.ErrNoRows
 	}
 	return nil
 }
