@@ -60,6 +60,19 @@ func (h *UserAssignmentHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "role is required")
 		return
 	}
+	userType, err := h.repo.GetUserType(r.Context(), input.UserID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusBadRequest, "user not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed to validate user")
+		return
+	}
+	if userType != "customer_staff" {
+		writeError(w, http.StatusBadRequest, "only customer_staff users can be assigned to customers")
+		return
+	}
 	assignment, err := h.repo.Create(r.Context(), input)
 	if err != nil {
 		if isUniqueViolation(err) {
