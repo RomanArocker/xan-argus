@@ -9,6 +9,10 @@ XAN-Pythia is a multi-tenant asset/user/license/service management system for an
 Design spec: `@docs/superpowers/specs/2026-03-27-xan-pythia-design.md`
 Data model: `@docs/data-model.mmd`
 
+## Project Learnings
+
+Read `.claude/learnings.md` at session start — contains project-specific insights, fixed bugs, and known gotchas.
+
 ## Tech Stack
 
 - **Backend:** Go (stdlib + pgx for database)
