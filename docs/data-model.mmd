@@ -1,0 +1,80 @@
+erDiagram
+    customers {
+        UUID id PK
+        string name
+        string contact_email
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    users {
+        UUID id PK
+        enum type "customer_staff | internal_staff"
+        string first_name
+        string last_name
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    user_assignments {
+        UUID id PK
+        UUID user_id FK
+        UUID customer_id FK
+        string role
+        string email
+        string phone
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    assets {
+        UUID id PK
+        UUID customer_id FK
+        enum type "hardware | software"
+        string name
+        text description
+        jsonb metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    licenses {
+        UUID id PK
+        UUID customer_id FK
+        UUID user_assignment_id FK "nullable"
+        string product_name
+        string license_key
+        int quantity
+        date valid_from
+        date valid_until
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    services {
+        UUID id PK
+        string name
+        text description
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    customer_services {
+        UUID id PK
+        UUID customer_id FK
+        UUID service_id FK
+        jsonb customizations
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    customers ||--o{ user_assignments : "has staff"
+    users ||--o{ user_assignments : "assigned to"
+    customers ||--o{ assets : "owns"
+    customers ||--o{ licenses : "pays for"
+    user_assignments ||--o{ licenses : "assigned to (optional)"
+    customers ||--o{ customer_services : "subscribes"
+    services ||--o{ customer_services : "offered as"
