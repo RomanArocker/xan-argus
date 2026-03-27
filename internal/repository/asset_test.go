@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/xan-com/xan-pythia/internal/model"
@@ -12,7 +13,7 @@ func TestAssetCRUD(t *testing.T) {
 	pool := setupTestDB(t)
 	ctx := context.Background()
 
-	// Prereq: customer
+	// Prereqs: customer and category
 	customerRepo := repository.NewCustomerRepository(pool)
 	customer, err := customerRepo.Create(ctx, model.CreateCustomerInput{Name: "Asset Test Customer"})
 	if err != nil {
@@ -20,12 +21,21 @@ func TestAssetCRUD(t *testing.T) {
 	}
 	t.Cleanup(func() { customerRepo.Delete(ctx, customer.ID) }) //nolint:errcheck
 
+	catRepo := repository.NewHardwareCategoryRepository(pool)
+	cat, err := catRepo.Create(ctx, model.CreateHardwareCategoryInput{Name: "Test Asset Category"})
+	if err != nil {
+		t.Fatalf("Create category: %v", err)
+	}
+	t.Cleanup(func() { catRepo.Delete(ctx, cat.ID) }) //nolint:errcheck
+
 	repo := repository.NewAssetRepository(pool)
 
-	// Create
+	// Create with category
 	input := model.CreateAssetInput{
-		CustomerID: customer.ID,
-		Name:       "Test Laptop",
+		CustomerID:  customer.ID,
+		CategoryID:  cat.ID,
+		Name:        "Test Laptop",
+		FieldValues: json.RawMessage(`{"some-field": "some-value"}`),
 	}
 	asset, err := repo.Create(ctx, input)
 	if err != nil {
@@ -34,14 +44,33 @@ func TestAssetCRUD(t *testing.T) {
 	if asset.Name != "Test Laptop" {
 		t.Errorf("Name = %q, want %q", asset.Name, "Test Laptop")
 	}
+	if !asset.CategoryID.Valid {
+		t.Error("CategoryID should be valid")
+	}
 	if !asset.ID.Valid {
 		t.Error("ID should be valid")
 	}
-	// Metadata defaults to {}
 	if string(asset.Metadata) == "" {
 		t.Error("Metadata should not be empty")
 	}
+	if string(asset.FieldValues) == "" {
+		t.Error("FieldValues should not be empty")
+	}
 	t.Cleanup(func() { repo.Delete(ctx, asset.ID) }) //nolint:errcheck
+
+	// Create without category (nullable)
+	inputNoCat := model.CreateAssetInput{
+		CustomerID: customer.ID,
+		Name:       "Uncategorized Device",
+	}
+	assetNoCat, err := repo.Create(ctx, inputNoCat)
+	if err != nil {
+		t.Fatalf("Create without category: %v", err)
+	}
+	if assetNoCat.CategoryID.Valid {
+		t.Error("CategoryID should be null for uncategorized asset")
+	}
+	t.Cleanup(func() { repo.Delete(ctx, assetNoCat.ID) }) //nolint:errcheck
 
 	// GetByID
 	got, err := repo.GetByID(ctx, asset.ID)
@@ -62,13 +91,13 @@ func TestAssetCRUD(t *testing.T) {
 		t.Errorf("Updated Name = %q, want %q", updated.Name, "Updated Laptop")
 	}
 
-	// ListByCustomer (no filter)
+	// ListByCustomer
 	assets, err := repo.ListByCustomer(ctx, customer.ID, model.ListParams{Limit: 10})
 	if err != nil {
 		t.Fatalf("ListByCustomer: %v", err)
 	}
-	if len(assets) == 0 {
-		t.Error("ListByCustomer returned no results")
+	if len(assets) < 2 {
+		t.Errorf("ListByCustomer returned %d results, want at least 2", len(assets))
 	}
 
 	// ListByCustomer with search
