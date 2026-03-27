@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 XAN-Pythia is a multi-tenant asset/user/license/service management system for an IT services business. MVP scope: CRUD, search, and overview — no authentication.
 
-Design spec: `@docs/2026-03-27-xan-pythia-design.md`
+Design spec: `@docs/superpowers/specs/2026-03-27-xan-pythia-design.md`
 Data model: `@docs/data-model.mmd`
 
 ## Tech Stack
 
 - **Backend:** Go (stdlib + pgx for database)
-- **Database:** PostgreSQL 16
+- **Database:** PostgreSQL 18.3
 - **Frontend:** HTMX + Go HTML templates
 - **Migrations:** goose (pure SQL, run on startup)
 - **Deployment:** Docker Compose (multi-stage build)
@@ -30,6 +30,10 @@ web/static/                  # CSS/JS assets
 ```
 
 No service layer in MVP — handlers call repositories directly.
+
+## Language
+
+- **Business language: English** — all code, comments, commit messages, UI labels, and documentation must be in English.
 
 ## Architecture Principles
 
