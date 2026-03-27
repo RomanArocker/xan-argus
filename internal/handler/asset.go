@@ -5,16 +5,18 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/xan-com/xan-pythia/internal/model"
 	"github.com/xan-com/xan-pythia/internal/repository"
 )
 
 type AssetHandler struct {
-	repo *repository.AssetRepository
+	repo    *repository.AssetRepository
+	catRepo *repository.HardwareCategoryRepository
 }
 
-func NewAssetHandler(repo *repository.AssetRepository) *AssetHandler {
-	return &AssetHandler{repo: repo}
+func NewAssetHandler(repo *repository.AssetRepository, catRepo *repository.HardwareCategoryRepository) *AssetHandler {
+	return &AssetHandler{repo: repo, catRepo: catRepo}
 }
 
 func (h *AssetHandler) RegisterRoutes(mux *http.ServeMux) {
@@ -32,6 +34,7 @@ func (h *AssetHandler) listByCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	params := paginationParams(r)
+	params.Filter = r.URL.Query().Get("category_id")
 	assets, err := h.repo.ListByCustomer(r.Context(), customerID, params)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to list assets")
@@ -56,9 +59,17 @@ func (h *AssetHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
-	if input.Type != "hardware" && input.Type != "software" {
-		writeError(w, http.StatusBadRequest, "type must be 'hardware' or 'software'")
-		return
+	// Validate field_values against category's field definitions
+	if input.CategoryID.Valid && len(input.FieldValues) > 0 && string(input.FieldValues) != "{}" {
+		cat, err := h.catRepo.GetByID(r.Context(), input.CategoryID)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid category_id")
+			return
+		}
+		if msg := validateFieldValues(input.FieldValues, cat.Fields); msg != "" {
+			writeError(w, http.StatusBadRequest, msg)
+			return
+		}
 	}
 	asset, err := h.repo.Create(r.Context(), input)
 	if err != nil {
@@ -83,7 +94,14 @@ func (h *AssetHandler) get(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to get asset")
 		return
 	}
-	writeJSON(w, http.StatusOK, asset)
+	resp := model.AssetResponse{Asset: asset}
+	if asset.CategoryID.Valid {
+		cat, err := h.catRepo.GetByID(r.Context(), asset.CategoryID)
+		if err == nil {
+			resp.Category = &cat
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (h *AssetHandler) update(w http.ResponseWriter, r *http.Request) {
@@ -96,6 +114,35 @@ func (h *AssetHandler) update(w http.ResponseWriter, r *http.Request) {
 	if err := decodeJSON(r, &input); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
+	}
+	// Validate field_values against category's field definitions
+	if len(input.FieldValues) > 0 && string(input.FieldValues) != "{}" {
+		var catID pgtype.UUID
+		if input.CategoryID.Valid {
+			catID = input.CategoryID
+		} else {
+			existing, err := h.repo.GetByID(r.Context(), id)
+			if err != nil {
+				if errors.Is(err, pgx.ErrNoRows) {
+					writeError(w, http.StatusNotFound, "asset not found")
+					return
+				}
+				writeError(w, http.StatusInternalServerError, "failed to get asset")
+				return
+			}
+			catID = existing.CategoryID
+		}
+		if catID.Valid {
+			cat, err := h.catRepo.GetByID(r.Context(), catID)
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "invalid category_id")
+				return
+			}
+			if msg := validateFieldValues(input.FieldValues, cat.Fields); msg != "" {
+				writeError(w, http.StatusBadRequest, msg)
+				return
+			}
+		}
 	}
 	asset, err := h.repo.Update(r.Context(), id, input)
 	if err != nil {
