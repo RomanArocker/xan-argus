@@ -57,6 +57,13 @@ func main() {
 		w.Write([]byte(`{"status":"ok"}`))
 	})
 
+	// Template engine + page handler
+	tmpl, err := handler.NewTemplateEngine("web/templates")
+	if err != nil {
+		log.Fatalf("loading templates: %v", err)
+	}
+	handler.NewPageHandler(tmpl, customerRepo, userRepo, serviceRepo, userAssignmentRepo, assetRepo, licenseRepo, customerServiceRepo).RegisterRoutes(mux)
+
 	// Register handlers
 	handler.NewCustomerHandler(customerRepo).RegisterRoutes(mux)
 	handler.NewUserHandler(userRepo).RegisterRoutes(mux)

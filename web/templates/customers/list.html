@@ -1,0 +1,21 @@
+{{define "content"}}
+<div class="page-header">
+    <h1>Customers</h1>
+    <a href="/customers/new" class="btn btn-primary">+ New Customer</a>
+</div>
+<div class="search-bar">
+    <input type="search" name="q" placeholder="Search customers..."
+           hx-get="/customers/rows"
+           hx-trigger="keyup changed delay:300ms"
+           hx-target="#customer-rows"
+           value="{{.Search}}">
+</div>
+<div class="card">
+    <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Created</th><th></th></tr></thead>
+        <tbody id="customer-rows">
+            {{template "customer_rows" .Customers}}
+        </tbody>
+    </table>
+</div>
+{{end}}

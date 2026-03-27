@@ -1,0 +1,84 @@
+{{define "content"}}
+<div class="page-header">
+    <h1>{{.Customer.Name}}</h1>
+    <div class="flex gap-1">
+        <a href="/customers/{{uuidStr .Customer.ID}}/edit" class="btn btn-primary">Edit</a>
+    </div>
+</div>
+
+<div class="card mb-1">
+    <dl>
+        <dt>Email</dt><dd>{{pgText .Customer.ContactEmail | default "—"}}</dd>
+        <dt>Notes</dt><dd>{{pgText .Customer.Notes | default "—"}}</dd>
+        <dt>Created</dt><dd>{{formatDateTime .Customer.CreatedAt}}</dd>
+    </dl>
+</div>
+
+<div class="section">
+    <div class="page-header"><h2>Assets</h2></div>
+    <div class="card">
+        <table>
+            <thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Created</th><th></th></tr></thead>
+            <tbody>
+                {{range .Assets}}
+                <tr>
+                    <td>{{.Name}}</td><td>{{.Type}}</td><td>{{pgText .Description}}</td><td>{{formatDateTime .CreatedAt}}</td>
+                    <td class="text-right"><button class="btn btn-danger btn-sm" hx-delete="/api/v1/assets/{{uuidStr .ID}}" hx-confirm="Delete asset '{{.Name}}'?" hx-target="closest tr" hx-swap="outerHTML swap:0.3s">Delete</button></td>
+                </tr>
+                {{else}}<tr><td colspan="5" class="text-muted">No assets.</td></tr>{{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <div class="page-header"><h2>Licenses</h2></div>
+    <div class="card">
+        <table>
+            <thead><tr><th>Product</th><th>Quantity</th><th>Valid From</th><th>Valid Until</th><th></th></tr></thead>
+            <tbody>
+                {{range .Licenses}}
+                <tr>
+                    <td>{{.ProductName}}</td><td>{{.Quantity}}</td><td>{{formatPgDate .ValidFrom}}</td><td>{{formatPgDate .ValidUntil}}</td>
+                    <td class="text-right"><button class="btn btn-danger btn-sm" hx-delete="/api/v1/licenses/{{uuidStr .ID}}" hx-confirm="Delete license '{{.ProductName}}'?" hx-target="closest tr" hx-swap="outerHTML swap:0.3s">Delete</button></td>
+                </tr>
+                {{else}}<tr><td colspan="5" class="text-muted">No licenses.</td></tr>{{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <div class="page-header"><h2>Assigned Users</h2></div>
+    <div class="card">
+        <table>
+            <thead><tr><th>Role</th><th>Email</th><th>Phone</th><th></th></tr></thead>
+            <tbody>
+                {{range .Assignments}}
+                <tr>
+                    <td>{{.Role}}</td><td>{{pgText .Email}}</td><td>{{pgText .Phone}}</td>
+                    <td class="text-right"><button class="btn btn-danger btn-sm" hx-delete="/api/v1/user-assignments/{{uuidStr .ID}}" hx-confirm="Delete assignment?" hx-target="closest tr" hx-swap="outerHTML swap:0.3s">Delete</button></td>
+                </tr>
+                {{else}}<tr><td colspan="4" class="text-muted">No users assigned.</td></tr>{{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <div class="page-header"><h2>Subscribed Services</h2></div>
+    <div class="card">
+        <table>
+            <thead><tr><th>Notes</th><th>Created</th><th></th></tr></thead>
+            <tbody>
+                {{range .CustomerServices}}
+                <tr>
+                    <td>{{pgText .Notes}}</td><td>{{formatDateTime .CreatedAt}}</td>
+                    <td class="text-right"><button class="btn btn-danger btn-sm" hx-delete="/api/v1/customer-services/{{uuidStr .ID}}" hx-confirm="Delete service subscription?" hx-target="closest tr" hx-swap="outerHTML swap:0.3s">Delete</button></td>
+                </tr>
+                {{else}}<tr><td colspan="3" class="text-muted">No services subscribed.</td></tr>{{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{end}}
