@@ -23,13 +23,16 @@ func (r *AssetRepository) Create(ctx context.Context, input model.CreateAssetInp
 	if input.Metadata == nil {
 		input.Metadata = json.RawMessage("{}")
 	}
+	if input.FieldValues == nil {
+		input.FieldValues = json.RawMessage("{}")
+	}
 	var a model.Asset
 	err := r.pool.QueryRow(ctx,
-		`INSERT INTO assets (customer_id, type, name, description, metadata)
-		 VALUES ($1, $2, $3, $4, $5)
-		 RETURNING id, customer_id, type, name, description, metadata, created_at, updated_at`,
-		input.CustomerID, input.Type, input.Name, input.Description, input.Metadata,
-	).Scan(&a.ID, &a.CustomerID, &a.Type, &a.Name, &a.Description, &a.Metadata, &a.CreatedAt, &a.UpdatedAt)
+		`INSERT INTO assets (customer_id, category_id, name, description, metadata, field_values)
+		 VALUES ($1, $2, $3, $4, $5, $6)
+		 RETURNING id, customer_id, category_id, name, description, metadata, field_values, created_at, updated_at`,
+		input.CustomerID, input.CategoryID, input.Name, input.Description, input.Metadata, input.FieldValues,
+	).Scan(&a.ID, &a.CustomerID, &a.CategoryID, &a.Name, &a.Description, &a.Metadata, &a.FieldValues, &a.CreatedAt, &a.UpdatedAt)
 	if err != nil {
 		return a, fmt.Errorf("creating asset: %w", err)
 	}
@@ -39,9 +42,9 @@ func (r *AssetRepository) Create(ctx context.Context, input model.CreateAssetInp
 func (r *AssetRepository) GetByID(ctx context.Context, id pgtype.UUID) (model.Asset, error) {
 	var a model.Asset
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, customer_id, type, name, description, metadata, created_at, updated_at
+		`SELECT id, customer_id, category_id, name, description, metadata, field_values, created_at, updated_at
 		 FROM assets WHERE id = $1`, id,
-	).Scan(&a.ID, &a.CustomerID, &a.Type, &a.Name, &a.Description, &a.Metadata, &a.CreatedAt, &a.UpdatedAt)
+	).Scan(&a.ID, &a.CustomerID, &a.CategoryID, &a.Name, &a.Description, &a.Metadata, &a.FieldValues, &a.CreatedAt, &a.UpdatedAt)
 	if err != nil {
 		return a, fmt.Errorf("getting asset: %w", err)
 	}
@@ -50,12 +53,12 @@ func (r *AssetRepository) GetByID(ctx context.Context, id pgtype.UUID) (model.As
 
 func (r *AssetRepository) ListByCustomer(ctx context.Context, customerID pgtype.UUID, params model.ListParams) ([]model.Asset, error) {
 	params.Normalize()
-	query := `SELECT id, customer_id, type, name, description, metadata, created_at, updated_at
+	query := `SELECT id, customer_id, category_id, name, description, metadata, field_values, created_at, updated_at
 	          FROM assets WHERE customer_id = $1`
 	args := []any{customerID}
 	argN := 2
 	if params.Filter != "" {
-		query += fmt.Sprintf(` AND type = $%d`, argN)
+		query += fmt.Sprintf(` AND category_id = $%d`, argN)
 		args = append(args, params.Filter)
 		argN++
 	}
@@ -75,17 +78,21 @@ func (r *AssetRepository) ListByCustomer(ctx context.Context, customerID pgtype.
 }
 
 func (r *AssetRepository) Update(ctx context.Context, id pgtype.UUID, input model.UpdateAssetInput) (model.Asset, error) {
+	if input.CategoryID.Valid && input.FieldValues == nil {
+		input.FieldValues = json.RawMessage("{}")
+	}
 	var a model.Asset
 	err := r.pool.QueryRow(ctx,
 		`UPDATE assets SET
-			type        = COALESCE($2, type),
+			category_id = COALESCE($2, category_id),
 			name        = COALESCE($3, name),
 			description = COALESCE($4, description),
-			metadata    = COALESCE($5, metadata)
+			metadata    = COALESCE($5, metadata),
+			field_values = COALESCE($6, field_values)
 		 WHERE id = $1
-		 RETURNING id, customer_id, type, name, description, metadata, created_at, updated_at`,
-		id, input.Type, input.Name, input.Description, input.Metadata,
-	).Scan(&a.ID, &a.CustomerID, &a.Type, &a.Name, &a.Description, &a.Metadata, &a.CreatedAt, &a.UpdatedAt)
+		 RETURNING id, customer_id, category_id, name, description, metadata, field_values, created_at, updated_at`,
+		id, input.CategoryID, input.Name, input.Description, input.Metadata, input.FieldValues,
+	).Scan(&a.ID, &a.CustomerID, &a.CategoryID, &a.Name, &a.Description, &a.Metadata, &a.FieldValues, &a.CreatedAt, &a.UpdatedAt)
 	if err != nil {
 		return a, fmt.Errorf("updating asset: %w", err)
 	}

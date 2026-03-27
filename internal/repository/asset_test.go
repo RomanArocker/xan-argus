@@ -25,7 +25,6 @@ func TestAssetCRUD(t *testing.T) {
 	// Create
 	input := model.CreateAssetInput{
 		CustomerID: customer.ID,
-		Type:       "hardware",
 		Name:       "Test Laptop",
 	}
 	asset, err := repo.Create(ctx, input)
@@ -34,9 +33,6 @@ func TestAssetCRUD(t *testing.T) {
 	}
 	if asset.Name != "Test Laptop" {
 		t.Errorf("Name = %q, want %q", asset.Name, "Test Laptop")
-	}
-	if asset.Type != "hardware" {
-		t.Errorf("Type = %q, want %q", asset.Type, "hardware")
 	}
 	if !asset.ID.Valid {
 		t.Error("ID should be valid")
@@ -73,15 +69,6 @@ func TestAssetCRUD(t *testing.T) {
 	}
 	if len(assets) == 0 {
 		t.Error("ListByCustomer returned no results")
-	}
-
-	// ListByCustomer with type filter
-	filtered, err := repo.ListByCustomer(ctx, customer.ID, model.ListParams{Limit: 10, Filter: "hardware"})
-	if err != nil {
-		t.Fatalf("ListByCustomer with filter: %v", err)
-	}
-	if len(filtered) == 0 {
-		t.Error("ListByCustomer with filter returned no results")
 	}
 
 	// ListByCustomer with search
