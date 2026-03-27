@@ -1,12 +1,12 @@
 {{define "content"}}
-<div class="page-header">
+<header class="page-header">
     <h1>{{if .IsNew}}New Category{{else}}Edit Category: {{.Category.Name}}{{end}}</h1>
-</div>
+</header>
 <div class="card">
     <form id="category-form"
           {{if .IsNew}}hx-post="/api/v1/hardware-categories"{{else}}hx-put="/api/v1/hardware-categories/{{uuidStr .Category.ID}}"{{end}}
           hx-ext="json-enc" hx-target="#form-message" hx-swap="innerHTML">
-        <div id="form-message"></div>
+        <div id="form-message" aria-live="polite"></div>
         <div class="form-group">
             <label for="name">Name *</label>
             <input type="text" id="name" name="name" value="{{if not .IsNew}}{{.Category.Name}}{{end}}" required>
@@ -23,8 +23,8 @@
 </div>
 
 {{if not .IsNew}}
-<div class="section mt-1">
-    <div class="page-header"><h2>Field Definitions</h2></div>
+<section class="section mt-1">
+    <header class="page-header"><h2>Field Definitions</h2></header>
     <div class="card">
         <table>
             <thead><tr><th>Name</th><th>Type</th><th>Sort Order</th><th></th></tr></thead>
@@ -50,7 +50,7 @@
         <form class="card mt-1" id="add-field-form"
               hx-post="/api/v1/hardware-categories/{{uuidStr .Category.ID}}/fields"
               hx-ext="json-enc" hx-target="#form-msg-field" hx-swap="innerHTML">
-            <div id="form-msg-field"></div>
+            <div id="form-msg-field" aria-live="polite"></div>
             <div class="form-group">
                 <label>Name *</label>
                 <input type="text" name="name" required>
@@ -68,7 +68,7 @@
             <button type="submit" class="btn btn-primary btn-sm">Add Field</button>
         </form>
     </details>
-</div>
+</section>
 {{end}}
 
 <script>
@@ -87,12 +87,12 @@
         if (evt.detail.elt.id === 'category-form') {
             var msg = 'Error saving';
             try { msg = JSON.parse(evt.detail.xhr.responseText).error || msg; } catch(e) {}
-            document.getElementById('form-message').innerHTML = '<div class="alert alert-error">' + msg + '</div>';
+            document.getElementById('form-message').innerHTML = '<div class="alert alert-error" role="alert">' + msg + '</div>';
         }
         if (evt.detail.elt.id === 'add-field-form') {
             var msg = 'Error saving';
             try { msg = JSON.parse(evt.detail.xhr.responseText).error || msg; } catch(e) {}
-            document.getElementById('form-msg-field').innerHTML = '<div class="alert alert-error">' + msg + '</div>';
+            document.getElementById('form-msg-field').innerHTML = '<div class="alert alert-error" role="alert">' + msg + '</div>';
         }
     });
 </script>

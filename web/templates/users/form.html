@@ -1,12 +1,12 @@
 {{define "content"}}
-<div class="page-header">
+<header class="page-header">
     <h1>{{if .IsNew}}New User{{else}}Edit User{{end}}</h1>
-</div>
+</header>
 <div class="card">
     <form id="user-form"
           {{if .IsNew}}hx-post="/api/v1/users"{{else}}hx-put="/api/v1/users/{{uuidStr .User.ID}}"{{end}}
           hx-ext="json-enc" hx-target="#form-message" hx-swap="innerHTML">
-        <div id="form-message"></div>
+        <div id="form-message" aria-live="polite"></div>
         <div class="form-group">
             <label for="type">Type *</label>
             <select id="type" name="type" required>
@@ -37,7 +37,7 @@
         if (evt.detail.elt.id === 'user-form') {
             var msg = 'Error saving';
             try { msg = JSON.parse(evt.detail.xhr.responseText).error || msg; } catch(e) {}
-            document.getElementById('form-message').innerHTML = '<div class="alert alert-error">' + msg + '</div>';
+            document.getElementById('form-message').innerHTML = '<div class="alert alert-error" role="alert">' + msg + '</div>';
         }
     });
 </script>
