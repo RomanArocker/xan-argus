@@ -554,9 +554,63 @@ func (h *PageHandler) licenseDetail(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *PageHandler) licenseForm(w http.ResponseWriter, r *http.Request) {}
+func (h *PageHandler) licenseForm(w http.ResponseWriter, r *http.Request) {
+	customerID, err := parseUUID(r.PathValue("customerId"))
+	if err != nil {
+		http.Error(w, "invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	customer, err := h.customerRepo.GetByID(r.Context(), customerID)
+	if err != nil {
+		http.Error(w, "customer not found", http.StatusNotFound)
+		return
+	}
+	listParams := model.ListParams{Limit: 100}
+	assignments, _ := h.userAssignmentRepo.ListByCustomer(r.Context(), customerID, listParams)
+	users, _ := h.userRepo.List(r.Context(), listParams)
 
-func (h *PageHandler) licenseEditForm(w http.ResponseWriter, r *http.Request) {}
+	h.tmpl.RenderPage(w, "licenses/form", map[string]any{
+		"Title":           "New License — " + customer.Name,
+		"Customer":        customer,
+		"License":         model.License{},
+		"IsNew":           true,
+		"UserAssignments": buildUserAssignmentDisplayList(assignments, users),
+	})
+}
+
+func (h *PageHandler) licenseEditForm(w http.ResponseWriter, r *http.Request) {
+	customerID, err := parseUUID(r.PathValue("customerId"))
+	if err != nil {
+		http.Error(w, "invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	licenseID, err := parseUUID(r.PathValue("licenseId"))
+	if err != nil {
+		http.Error(w, "invalid license ID", http.StatusBadRequest)
+		return
+	}
+	customer, err := h.customerRepo.GetByID(r.Context(), customerID)
+	if err != nil {
+		http.Error(w, "customer not found", http.StatusNotFound)
+		return
+	}
+	license, err := h.licenseRepo.GetByID(r.Context(), licenseID)
+	if err != nil {
+		http.Error(w, "license not found", http.StatusNotFound)
+		return
+	}
+	listParams := model.ListParams{Limit: 100}
+	assignments, _ := h.userAssignmentRepo.ListByCustomer(r.Context(), customerID, listParams)
+	users, _ := h.userRepo.List(r.Context(), listParams)
+
+	h.tmpl.RenderPage(w, "licenses/form", map[string]any{
+		"Title":           "Edit License — " + customer.Name,
+		"Customer":        customer,
+		"License":         license,
+		"IsNew":           false,
+		"UserAssignments": buildUserAssignmentDisplayList(assignments, users),
+	})
+}
 
 func (h *PageHandler) categoryFieldsPartial(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUID(r.PathValue("id"))

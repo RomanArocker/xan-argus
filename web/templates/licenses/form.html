@@ -1,0 +1,83 @@
+{{define "content"}}
+<header class="page-header">
+    <h1>{{if .IsNew}}New License{{else}}Edit License{{end}} — {{.Customer.Name}}</h1>
+</header>
+
+<div class="card">
+    <form id="license-form"
+          {{if .IsNew}}hx-post="/api/v1/customers/{{uuidStr .Customer.ID}}/licenses"{{else}}hx-put="/api/v1/licenses/{{uuidStr .License.ID}}"{{end}}
+          hx-ext="json-enc"
+          hx-target="#form-message"
+          hx-swap="innerHTML">
+
+        <div id="form-message" aria-live="polite"></div>
+
+        <div class="form-group">
+            <label for="product_name">Product Name *</label>
+            <input type="text" id="product_name" name="product_name"
+                   value="{{if not .IsNew}}{{.License.ProductName}}{{end}}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="license_key">License Key</label>
+            <input type="text" id="license_key" name="license_key"
+                   value="{{if not .IsNew}}{{pgText .License.LicenseKey}}{{end}}">
+        </div>
+
+        <div class="form-group">
+            <label for="quantity">Quantity *</label>
+            <input type="number" id="quantity" name="quantity" min="1"
+                   value="{{if .IsNew}}1{{else}}{{.License.Quantity}}{{end}}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="valid_from">Valid From</label>
+            <input type="date" id="valid_from" name="valid_from"
+                   value="{{if not .IsNew}}{{formatPgDate .License.ValidFrom}}{{end}}">
+        </div>
+
+        <div class="form-group">
+            <label for="valid_until">Valid Until</label>
+            <input type="date" id="valid_until" name="valid_until"
+                   value="{{if not .IsNew}}{{formatPgDate .License.ValidUntil}}{{end}}">
+        </div>
+
+        <div class="form-group">
+            <label for="user_assignment_id">Assigned to</label>
+            <select id="user_assignment_id" name="user_assignment_id">
+                <option value="">— Not assigned —</option>
+                {{range .UserAssignments}}
+                <option value="{{uuidStr .ID}}" {{if eq (uuidStr .ID) (uuidStr $.License.UserAssignmentID)}}selected{{end}}>{{.DisplayName}}</option>
+                {{end}}
+            </select>
+        </div>
+
+        <div class="flex gap-1">
+            <button type="submit" class="btn btn-primary">{{if .IsNew}}Create{{else}}Save{{end}}</button>
+            <a href="/customers/{{uuidStr .Customer.ID}}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.elt.id === 'license-form' && evt.detail.successful) {
+            var response = JSON.parse(evt.detail.xhr.responseText);
+            if (response.id) {
+                window.location.href = '/customers/{{uuidStr .Customer.ID}}/licenses/' + response.id;
+            }
+        }
+    });
+    document.body.addEventListener('htmx:responseError', function(evt) {
+        if (evt.detail.elt.id === 'license-form') {
+            var msg = 'Error saving';
+            try {
+                var r = JSON.parse(evt.detail.xhr.responseText);
+                if (r.error) msg = r.error;
+            } catch(e) {}
+            document.getElementById('form-message').innerHTML =
+                '<div class="alert alert-error" role="alert">' + msg + '</div>';
+        }
+    });
+</script>
+{{end}}
