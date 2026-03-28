@@ -1,0 +1,28 @@
+{{define "content"}}
+<header class="page-header">
+    <a href="/customers/{{uuidStr .Customer.ID}}">&larr; Back to {{.Customer.Name}}</a>
+    <h1>{{.Asset.Name}}</h1>
+</header>
+
+<div class="card mb-1">
+    <dl>
+        <dt>Category</dt><dd>{{if .Category}}{{.Category.Name}}{{else}}—{{end}}</dd>
+        <dt>Description</dt><dd>{{pgText .Asset.Description | default "—"}}</dd>
+        <dt>Created</dt><dd>{{formatDateTime .Asset.CreatedAt}}</dd>
+        <dt>Updated</dt><dd>{{formatDateTime .Asset.UpdatedAt}}</dd>
+    </dl>
+</div>
+
+{{if .Fields}}
+<section class="section">
+    <header class="page-header"><h2>Category Fields</h2></header>
+    <div class="card">
+        <dl>
+            {{range .Fields}}
+            <dt>{{.Name}}</dt><dd>{{.Value | default "—"}}</dd>
+            {{end}}
+        </dl>
+    </div>
+</section>
+{{end}}
+{{end}}
