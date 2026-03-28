@@ -40,41 +40,43 @@ Field types are rendered as plain text (no special formatting for date/boolean/n
 
 ### Page Handler
 
-Add a new method to `CustomerHandler` (since this is a sub-page of customer):
+Add a new method to `PageHandler` (which already holds all needed repositories: `customerRepo`, `assetRepo`, `hardwareCategoryRepo`):
 
 ```go
-func (h *CustomerHandler) assetDetail(w http.ResponseWriter, r *http.Request)
+func (h *PageHandler) assetDetail(w http.ResponseWriter, r *http.Request)
 ```
 
 **Data loading:**
 1. Parse `customerId` and `assetId` from path
-2. Load customer via `CustomerRepository.GetByID` (for back-link name)
-3. Load asset via `AssetRepository.GetByID`
-4. Validate `asset.CustomerID == customerId` (404 if mismatch)
-5. If `asset.CategoryID` is valid, load category via `HardwareCategoryRepository.GetByID` (provides field definitions with names and sort order)
+2. Load customer via `CustomerRepository.GetByID` — 404 if customer not found
+3. Load asset via `AssetRepository.GetByID` — 404 if asset not found
+4. Validate `asset.CustomerID == customerId` — 404 if mismatch (prevents URL manipulation)
+5. If `asset.CategoryID` is valid, load category via `HardwareCategoryRepository.GetByID`. If the category was deleted, treat as `nil` (show asset without category fields rather than erroring)
 
-**Route registration:**
+**Route registration** (in `PageHandler.RegisterRoutes`):
 ```go
 mux.HandleFunc("GET /customers/{customerId}/assets/{assetId}", h.assetDetail)
 ```
 
 ### Template Data
 
-```go
-type AssetDetailData struct {
-    Customer model.Customer
-    Asset    model.Asset
-    Category *model.HardwareCategory  // nil if no category
-    Fields   []AssetFieldDisplay       // sorted, label + value pairs
-}
+Defined in the `handler` package (following existing pattern where handler-specific types live alongside the handler):
 
+```go
+// AssetFieldDisplay is a pre-resolved label+value pair for template rendering.
 type AssetFieldDisplay struct {
     Name  string
     Value string
 }
 ```
 
-The handler prepares `Fields` by iterating `category.Fields` (sorted by `sort_order`), looking up each field name in `asset.FieldValues` JSON, and converting to display strings.
+Template data is passed as an anonymous struct or a local struct in the handler method, containing:
+- `Customer model.Customer`
+- `Asset model.Asset`
+- `Category *model.HardwareCategory` (nil if no category)
+- `Fields []AssetFieldDisplay` (sorted, label + value pairs)
+
+**Field value resolution:** The handler unmarshals `asset.FieldValues` (a `json.RawMessage`) into `map[string]interface{}`, then iterates `category.Fields` (already sorted by `sort_order, name` from the SQL query in `ListFields`), looks up each field name in the map, and converts the value to a display string via `fmt.Sprintf`.
 
 ## Template
 
