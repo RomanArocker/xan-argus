@@ -30,6 +30,12 @@ func newFuncMap() template.FuncMap {
 			}
 			return d.Time.Format("02.01.2006")
 		},
+		"formatInputDate": func(d pgtype.Date) string {
+			if !d.Valid {
+				return ""
+			}
+			return d.Time.Format("2006-01-02")
+		},
 		"pgText": func(t pgtype.Text) string {
 			if !t.Valid {
 				return ""
