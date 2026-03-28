@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +11,11 @@ import (
 	"github.com/xan-com/xan-argus/internal/handler"
 	"github.com/xan-com/xan-argus/internal/middleware"
 	"github.com/xan-com/xan-argus/internal/repository"
+)
+
+var (
+	version   = "dev"
+	gitCommit = "unknown"
 )
 
 func main() {
@@ -52,10 +58,11 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Health
+	appVersion := "v" + version + "-" + gitCommit
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok"}`))
+		fmt.Fprintf(w, `{"status":"ok","version":%q}`, appVersion)
 	})
 
 	// Template engine + page handler
@@ -63,6 +70,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("loading templates: %v", err)
 	}
+	tmpl.Version = appVersion
 	handler.NewPageHandler(tmpl, customerRepo, userRepo, serviceRepo, userAssignmentRepo, assetRepo, licenseRepo, customerServiceRepo, hardwareCategoryRepo).RegisterRoutes(mux)
 
 	// Register handlers
