@@ -133,18 +133,22 @@ func (h *PageHandler) customerDetail(w http.ResponseWriter, r *http.Request) {
 	for _, cat := range categories {
 		categoryMap[uuidToStr(cat.ID)] = cat.Name
 	}
+	licenseAssignmentMap := buildAssignmentMap(assignments, users)
+	userAssignmentDisplays := buildUserAssignmentDisplayList(assignments, users)
 
 	h.tmpl.RenderPage(w, "customers/detail", map[string]any{
-		"Title":            customer.Name,
-		"Customer":         customer,
-		"Assets":           assets,
-		"Licenses":         licenses,
-		"Assignments":      assignments,
-		"CustomerServices": customerServices,
-		"Users":            users,
-		"AllServices":      allServices,
-		"AllCategories":    categories,
-		"CategoryMap":      categoryMap,
+		"Title":                  customer.Name,
+		"Customer":               customer,
+		"Assets":                 assets,
+		"Licenses":               licenses,
+		"Assignments":            assignments,
+		"CustomerServices":       customerServices,
+		"Users":                  users,
+		"AllServices":            allServices,
+		"AllCategories":          categories,
+		"CategoryMap":            categoryMap,
+		"LicenseAssignmentMap":   licenseAssignmentMap,
+		"UserAssignmentDisplays": userAssignmentDisplays,
 	})
 }
 
