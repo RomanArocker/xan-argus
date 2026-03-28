@@ -14,6 +14,7 @@ import (
 type TemplateEngine struct {
 	pages    map[string]*template.Template // page templates (layout + content)
 	partials *template.Template            // standalone partials (rows, etc.)
+	Version  string                        // app version string, injected into every page render
 }
 
 func newFuncMap() template.FuncMap {
@@ -108,12 +109,16 @@ func NewTemplateEngine(templateDir string) (*TemplateEngine, error) {
 }
 
 // RenderPage renders a page template (layout + content) by page key (e.g., "customers/list")
-func (e *TemplateEngine) RenderPage(w http.ResponseWriter, page string, data any) {
+func (e *TemplateEngine) RenderPage(w http.ResponseWriter, page string, data map[string]any) {
 	t, ok := e.pages[page]
 	if !ok {
 		http.Error(w, "page not found: "+page, http.StatusInternalServerError)
 		return
 	}
+	if data == nil {
+		data = map[string]any{}
+	}
+	data["Version"] = e.Version
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := t.ExecuteTemplate(w, "layout", data); err != nil {
 		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
