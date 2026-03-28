@@ -38,34 +38,65 @@ var (
 )
 ```
 
-Set at build time via `-ldflags`. If built without the Makefile, the binary reports `dev-unknown`.
+Set at build time via `-ldflags`. If built without the Makefile (e.g. `go build ./cmd/server/`), the binary reports `vdev-unknown` — this is the expected fallback string, no defensive logic needed.
 
 ### 3. Makefile
 
 All build targets read `VERSION` and the current git hash and pass them as ldflags.
 
-**Build:**
+The Makefile requires `bash` (available via Git Bash on Windows):
+
 ```makefile
-VERSION    := $(shell cat VERSION)
+SHELL      := /bin/bash
+VERSION    := $(shell cat VERSION 2>/dev/null || echo dev)
 GIT_COMMIT := $(shell git rev-parse --short HEAD)
 LDFLAGS    := -ldflags "-X main.version=$(VERSION) -X main.gitCommit=$(GIT_COMMIT)"
 
 build:
-    go build $(LDFLAGS) -o xan-argus ./cmd/server/
+	go build $(LDFLAGS) -o xan-argus ./cmd/server/
+
+docker-build:
+	VERSION=$(VERSION) GIT_COMMIT=$(GIT_COMMIT) docker compose up --build
 ```
 
-**Version bump targets** — each reads `VERSION`, increments the appropriate component, writes it back, creates a git commit, and sets a git tag:
+If `VERSION` is absent, `cat` falls back to `dev` so the build never fails silently.
+
+**Version bump targets** — each reads `VERSION`, increments the appropriate component with `awk`, writes it back, creates a git commit, and sets a git tag:
 
 ```makefile
-bump-patch:   # 1.2.0 → 1.2.1
-bump-minor:   # 1.2.0 → 1.3.0
-bump-major:   # 1.2.0 → 2.0.0
+bump-patch:
+	@old=$$(cat VERSION); \
+	new=$$(echo $$old | awk -F. '{print $$1"."$$2"."$$3+1}'); \
+	echo $$new > VERSION; \
+	git add VERSION; \
+	git commit -m "chore: bump version to $$new"; \
+	git tag v$$new; \
+	echo "Bumped to $$new — run: git push && git push --tags"
+
+bump-minor:
+	@old=$$(cat VERSION); \
+	new=$$(echo $$old | awk -F. '{print $$1"."$$2+1".0"}'); \
+	echo $$new > VERSION; \
+	git add VERSION; \
+	git commit -m "chore: bump version to $$new"; \
+	git tag v$$new; \
+	echo "Bumped to $$new — run: git push && git push --tags"
+
+bump-major:
+	@old=$$(cat VERSION); \
+	new=$$(echo $$old | awk -F. '{print $$1+1".0.0"}'); \
+	echo $$new > VERSION; \
+	git add VERSION; \
+	git commit -m "chore: bump version to $$new"; \
+	git tag v$$new; \
+	echo "Bumped to $$new — run: git push && git push --tags"
 ```
 
 After running `make bump-patch`:
 - `VERSION` file is updated
 - A commit `chore: bump version to 1.2.1` is created
 - A git tag `v1.2.1` is set
+- **Neither the commit nor the tag is pushed automatically** — run `git push && git push --tags` afterward
 
 ### 4. Dockerfile
 
@@ -77,7 +108,7 @@ ARG GIT_COMMIT=unknown
 RUN go build -ldflags "-X main.version=${VERSION} -X main.gitCommit=${GIT_COMMIT}" -o /xan-argus ./cmd/server/
 ```
 
-`docker-compose.yml` passes the args via shell substitution:
+`docker-compose.yml` passes the args via env-var substitution with fallbacks:
 
 ```yaml
 build:
@@ -86,16 +117,11 @@ build:
     GIT_COMMIT: ${GIT_COMMIT:-unknown}
 ```
 
-For production builds, set the env vars before running `docker compose up --build`:
-```bash
-VERSION=$(cat VERSION) GIT_COMMIT=$(git rev-parse --short HEAD) docker compose up --build
-```
-
-Or add a `docker-build` Makefile target that does this automatically.
+Always use `make docker-build` (defined in the Makefile above) to trigger Docker builds with version info. Direct `docker compose up --build` without env vars will produce a `dev-unknown` binary.
 
 ### 5. `TemplateEngine` — Global Version Injection
 
-`TemplateEngine` in `internal/handler/template.go` gets a `Version string` field set at startup. `RenderPage` and `RenderPartial` merge this into every template data map automatically, so no individual page handler needs to pass it.
+`TemplateEngine` in `internal/handler/template.go` gets a `Version string` field. `RenderPage` merges it into every page template data map automatically — no individual page handler needs to pass it. `RenderPartial` is **not** changed (partials are standalone fragments that never render `layout.html`).
 
 ```go
 type TemplateEngine struct {
@@ -104,11 +130,23 @@ type TemplateEngine struct {
 }
 ```
 
-In `main.go`, the version string is constructed and passed to `NewTemplateEngine` (or set directly after construction):
+`NewTemplateEngine` signature is **not** changed. After construction in `main.go`, the field is set directly:
 
 ```go
 appVersion := "v" + version + "-" + gitCommit
 tmpl.Version = appVersion
+```
+
+`RenderPage` uses a blind write — callers never supply a `"Version"` key, so no collision check is needed:
+
+```go
+func (t *TemplateEngine) RenderPage(w http.ResponseWriter, name string, data map[string]any) {
+    if data == nil {
+        data = map[string]any{}
+    }
+    data["Version"] = t.Version
+    // ...existing render logic...
+}
 ```
 
 ### 6. `layout.html` Footer
