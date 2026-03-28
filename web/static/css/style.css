@@ -58,6 +58,11 @@ input, select, textarea {
 }
 textarea { min-height: 80px; resize: vertical; }
 
+dl { margin: 0.5rem 0; }
+dt { font-weight: 600; color: var(--muted); font-size: 0.85rem; margin-top: 0.5rem; }
+dt:first-child { margin-top: 0; }
+dd { margin: 0; }
+
 .btn {
   display: inline-block;
   padding: 0.5rem 1rem;
