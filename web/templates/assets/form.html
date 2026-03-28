@@ -5,10 +5,11 @@
 
 <div class="card">
     <form id="asset-form"
-          {{if .IsNew}}hx-post="/api/v1/customers/{{uuidStr .Customer.ID}}/assets"{{else}}hx-put="/api/v1/assets/{{uuidStr .Asset.ID}}"{{end}}
-          hx-ext="json-enc"
-          hx-target="#form-message"
-          hx-swap="innerHTML">
+          data-url="{{if .IsNew}}/api/v1/customers/{{uuidStr .Customer.ID}}/assets{{else}}/api/v1/assets/{{uuidStr .Asset.ID}}{{end}}"
+          data-method="{{if .IsNew}}POST{{else}}PUT{{end}}"
+          data-customer-id="{{uuidStr .Customer.ID}}"
+          data-is-new="{{.IsNew}}"
+          onsubmit="return false;">
 
         <div id="form-message" aria-live="polite"></div>
 
@@ -20,12 +21,7 @@
 
         <div class="form-group">
             <label for="category_id">Category</label>
-            <select id="category_id" name="category_id"
-                    hx-get=""
-                    hx-target="#category-fields"
-                    hx-swap="innerHTML"
-                    hx-trigger="change"
-                    hx-include="[name='category_id']">
+            <select id="category_id" name="category_id">
                 <option value="">— No category —</option>
                 {{range .Categories}}
                 <option value="{{uuidStr .ID}}" {{if eq (uuidStr .ID) (uuidStr $.Asset.CategoryID)}}selected{{end}}>{{.Name}}</option>
@@ -37,6 +33,16 @@
             {{if .CategoryFields}}
                 {{template "category_fields" .CategoryFields}}
             {{end}}
+        </div>
+
+        <div class="form-group">
+            <label for="user_assignment_id">Assigned to</label>
+            <select id="user_assignment_id" name="user_assignment_id">
+                <option value="">— Not assigned —</option>
+                {{range .UserAssignments}}
+                <option value="{{uuidStr .ID}}" {{if eq (uuidStr .ID) (uuidStr $.Asset.UserAssignmentID)}}selected{{end}}>{{.DisplayName}}</option>
+                {{end}}
+            </select>
         </div>
 
         <div class="form-group">
@@ -52,26 +58,31 @@
 </div>
 
 <script>
-    // Set hx-get URL dynamically based on selected category
+    // Load category fields via htmx.ajax when category changes
     var categorySelect = document.getElementById('category_id');
-    function updateFieldsUrl() {
+    categorySelect.addEventListener('change', function() {
         var catId = categorySelect.value;
         if (catId) {
             var assetId = '{{if not .IsNew}}{{uuidStr .Asset.ID}}{{end}}';
             var url = '/categories/' + catId + '/fields';
             if (assetId) url += '?asset_id=' + assetId;
-            categorySelect.setAttribute('hx-get', url);
+            htmx.ajax('GET', url, {target: '#category-fields', swap: 'innerHTML'});
         } else {
-            categorySelect.setAttribute('hx-get', '');
             document.getElementById('category-fields').innerHTML = '';
         }
-    }
-    categorySelect.addEventListener('change', updateFieldsUrl);
-    // Initialize on page load (for edit mode)
-    updateFieldsUrl();
+    });
 
-    // Build field_values from category field inputs before submit
-    document.getElementById('asset-form').addEventListener('htmx:configRequest', function(evt) {
+    // Submit form via fetch to support nested field_values JSON
+    var form = document.getElementById('asset-form');
+    form.querySelector('button[type="submit"]').addEventListener('click', function() {
+        var body = {name: document.getElementById('name').value};
+        var desc = document.getElementById('description').value;
+        if (desc) body.description = desc;
+        if (categorySelect.value) body.category_id = categorySelect.value;
+        var assignSelect = document.getElementById('user_assignment_id');
+        if (assignSelect.value) body.user_assignment_id = assignSelect.value;
+
+        // Collect category field values
         var fieldInputs = document.querySelectorAll('[data-field-id]');
         if (fieldInputs.length > 0) {
             var fieldValues = {};
@@ -86,35 +97,27 @@
                     fieldValues[id] = input.value || null;
                 }
             });
-            evt.detail.parameters.field_values = fieldValues;
+            body.field_values = fieldValues;
         }
-        // Remove empty category_id so it doesn't send as ""
-        if (!categorySelect.value) {
-            delete evt.detail.parameters.category_id;
-        }
-    });
 
-    // Success: navigate to asset detail page
-    document.body.addEventListener('htmx:afterRequest', function(evt) {
-        if (evt.detail.elt.id === 'asset-form' && evt.detail.successful) {
-            var response = JSON.parse(evt.detail.xhr.responseText);
-            if (response.id) {
-                window.location.href = '/customers/{{uuidStr .Customer.ID}}/assets/' + response.id;
+        fetch(form.dataset.url, {
+            method: form.dataset.method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        }).then(function(resp) {
+            return resp.json().then(function(data) { return {ok: resp.ok, data: data}; });
+        }).then(function(result) {
+            if (result.ok && result.data.id) {
+                window.location.href = '/customers/' + form.dataset.customerId + '/assets/' + result.data.id;
+            } else {
+                var msg = result.data.error || 'Error saving asset';
+                document.getElementById('form-message').innerHTML =
+                    '<div class="alert alert-error" role="alert">' + msg + '</div>';
             }
-        }
-    });
-
-    // Error: show error message
-    document.body.addEventListener('htmx:responseError', function(evt) {
-        if (evt.detail.elt.id === 'asset-form') {
-            var msg = 'Error saving asset';
-            try {
-                var r = JSON.parse(evt.detail.xhr.responseText);
-                if (r.error) msg = r.error;
-            } catch(e) {}
+        }).catch(function() {
             document.getElementById('form-message').innerHTML =
-                '<div class="alert alert-error" role="alert">' + msg + '</div>';
-        }
+                '<div class="alert alert-error" role="alert">Error saving asset</div>';
+        });
     });
 </script>
 {{end}}
