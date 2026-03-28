@@ -8,10 +8,11 @@ import (
 )
 
 type Asset struct {
-	ID          pgtype.UUID     `json:"id"`
-	CustomerID  pgtype.UUID     `json:"customer_id"`
-	CategoryID  pgtype.UUID     `json:"category_id"`
-	Name        string          `json:"name"`
+	ID               pgtype.UUID     `json:"id"`
+	CustomerID       pgtype.UUID     `json:"customer_id"`
+	CategoryID       pgtype.UUID     `json:"category_id"`
+	UserAssignmentID pgtype.UUID     `json:"user_assignment_id"`
+	Name             string          `json:"name"`
 	Description pgtype.Text     `json:"description"`
 	Metadata    json.RawMessage `json:"metadata"`
 	FieldValues json.RawMessage `json:"field_values"`
@@ -27,17 +28,19 @@ type AssetResponse struct {
 }
 
 type CreateAssetInput struct {
-	CustomerID  pgtype.UUID     `json:"customer_id"`
-	CategoryID  pgtype.UUID     `json:"category_id,omitempty"`
-	Name        string          `json:"name"`
+	CustomerID       pgtype.UUID     `json:"customer_id"`
+	CategoryID       pgtype.UUID     `json:"category_id,omitempty"`
+	UserAssignmentID pgtype.UUID     `json:"user_assignment_id,omitempty"`
+	Name             string          `json:"name"`
 	Description *string         `json:"description,omitempty"`
 	Metadata    json.RawMessage `json:"metadata,omitempty"`
 	FieldValues json.RawMessage `json:"field_values,omitempty"`
 }
 
 type UpdateAssetInput struct {
-	CategoryID  pgtype.UUID     `json:"category_id,omitempty"`
-	Name        *string         `json:"name,omitempty"`
+	CategoryID       pgtype.UUID     `json:"category_id,omitempty"`
+	UserAssignmentID pgtype.UUID     `json:"user_assignment_id,omitempty"`
+	Name             *string         `json:"name,omitempty"`
 	Description *string         `json:"description,omitempty"`
 	Metadata    json.RawMessage `json:"metadata,omitempty"`
 	FieldValues json.RawMessage `json:"field_values,omitempty"`
