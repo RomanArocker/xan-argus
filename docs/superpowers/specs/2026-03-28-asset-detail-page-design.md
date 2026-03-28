@@ -80,7 +80,7 @@ Template data is passed as an anonymous struct or a local struct in the handler 
 
 ## Template
 
-New file: `web/templates/asset_detail.html`
+New file: `web/templates/customers/asset_detail.html` (follows existing convention: templates live in entity subdirectories)
 
 Follows existing patterns (extends base layout, uses `<dl>` for fields, semantic HTML with `<header>`, `<section>`).
 
