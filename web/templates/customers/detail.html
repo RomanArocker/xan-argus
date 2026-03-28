@@ -22,7 +22,7 @@
             <tbody>
                 {{range .Assets}}
                 <tr>
-                    <td>{{.Name}}</td><td>{{if .CategoryID.Valid}}{{mapGet $.CategoryMap (uuidStr .CategoryID)}}{{else}}<span class="text-muted">—</span>{{end}}</td><td>{{pgText .Description}}</td><td>{{formatDateTime .CreatedAt}}</td>
+                    <td><a href="/customers/{{uuidStr $.Customer.ID}}/assets/{{uuidStr .ID}}">{{.Name}}</a></td><td>{{if .CategoryID.Valid}}{{mapGet $.CategoryMap (uuidStr .CategoryID)}}{{else}}<span class="text-muted">—</span>{{end}}</td><td>{{pgText .Description}}</td><td>{{formatDateTime .CreatedAt}}</td>
                     <td class="text-right"><button class="btn btn-danger btn-sm" hx-delete="/api/v1/assets/{{uuidStr .ID}}" hx-confirm="Delete asset '{{.Name}}'?" hx-target="closest tr" hx-swap="outerHTML swap:0.3s">Delete</button></td>
                 </tr>
                 {{else}}<tr><td colspan="5" class="text-muted">No assets.</td></tr>{{end}}
