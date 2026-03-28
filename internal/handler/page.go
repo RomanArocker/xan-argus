@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/xan-com/xan-argus/internal/model"
 	"github.com/xan-com/xan-argus/internal/repository"
 )
@@ -318,6 +319,27 @@ type AssetFieldDisplay struct {
 	Value string
 }
 
+// UserAssignmentDisplay holds a pre-resolved assignment for template dropdowns.
+type UserAssignmentDisplay struct {
+	ID          pgtype.UUID
+	DisplayName string
+}
+
+// buildUserAssignmentDisplayList builds display-friendly assignment list using a user map.
+func buildUserAssignmentDisplayList(assignments []model.UserAssignment, users []model.User) []UserAssignmentDisplay {
+	userMap := make(map[string]string, len(users))
+	for _, u := range users {
+		userMap[uuidToStr(u.ID)] = u.LastName + ", " + u.FirstName
+	}
+	result := make([]UserAssignmentDisplay, 0, len(assignments))
+	for _, a := range assignments {
+		name := userMap[uuidToStr(a.UserID)]
+		display := name + " (" + a.Role + ")"
+		result = append(result, UserAssignmentDisplay{ID: a.ID, DisplayName: display})
+	}
+	return result
+}
+
 // CategoryFieldData pairs a field definition with its current value for form rendering.
 type CategoryFieldData struct {
 	model.FieldDefinition
@@ -373,12 +395,24 @@ func (h *PageHandler) assetDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var assignedUser string
+	if asset.UserAssignmentID.Valid {
+		ua, err := h.userAssignmentRepo.GetByID(r.Context(), asset.UserAssignmentID)
+		if err == nil {
+			u, err := h.userRepo.GetByID(r.Context(), ua.UserID)
+			if err == nil {
+				assignedUser = u.LastName + ", " + u.FirstName + " (" + ua.Role + ")"
+			}
+		}
+	}
+
 	h.tmpl.RenderPage(w, "customers/asset_detail", map[string]any{
-		"Title":    asset.Name + " — " + customer.Name,
-		"Customer": customer,
-		"Asset":    asset,
-		"Category": cat,
-		"Fields":   fields,
+		"Title":        asset.Name + " — " + customer.Name,
+		"Customer":     customer,
+		"Asset":        asset,
+		"Category":     cat,
+		"Fields":       fields,
+		"AssignedUser": assignedUser,
 	})
 }
 
@@ -398,12 +432,15 @@ func (h *PageHandler) assetForm(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to load categories", http.StatusInternalServerError)
 		return
 	}
+	assignments, _ := h.userAssignmentRepo.ListByCustomer(r.Context(), customerID, model.ListParams{Limit: 1000})
+	users, _ := h.userRepo.List(r.Context(), model.ListParams{Limit: 1000})
 	h.tmpl.RenderPage(w, "assets/form", map[string]any{
-		"Title":      "New Asset — " + customer.Name,
-		"Customer":   customer,
-		"Asset":      model.Asset{},
-		"Categories": categories,
-		"IsNew":      true,
+		"Title":           "New Asset — " + customer.Name,
+		"Customer":        customer,
+		"Asset":           model.Asset{},
+		"Categories":      categories,
+		"IsNew":           true,
+		"UserAssignments": buildUserAssignmentDisplayList(assignments, users),
 	})
 }
 
@@ -442,13 +479,16 @@ func (h *PageHandler) assetEditForm(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	assignments, _ := h.userAssignmentRepo.ListByCustomer(r.Context(), customerID, model.ListParams{Limit: 1000})
+	users, _ := h.userRepo.List(r.Context(), model.ListParams{Limit: 1000})
 	h.tmpl.RenderPage(w, "assets/form", map[string]any{
-		"Title":          "Edit Asset — " + customer.Name,
-		"Customer":       customer,
-		"Asset":          asset,
-		"Categories":     categories,
-		"CategoryFields": categoryFields,
-		"IsNew":          false,
+		"Title":           "Edit Asset — " + customer.Name,
+		"Customer":        customer,
+		"Asset":           asset,
+		"Categories":      categories,
+		"CategoryFields":  categoryFields,
+		"IsNew":           false,
+		"UserAssignments": buildUserAssignmentDisplayList(assignments, users),
 	})
 }
 
