@@ -354,7 +354,8 @@ func (h *PageHandler) assetDetail(w http.ResponseWriter, r *http.Request) {
 			if err := json.Unmarshal(asset.FieldValues, &vals); err == nil {
 				for _, fd := range c.Fields {
 					v := "—"
-					if raw, ok := vals[fd.Name]; ok && raw != nil {
+					// field_values keys are field definition UUIDs, not names
+					if raw, ok := vals[uuidToStr(fd.ID)]; ok && raw != nil {
 						v = fmt.Sprintf("%v", raw)
 					}
 					fields = append(fields, AssetFieldDisplay{Name: fd.Name, Value: v})
