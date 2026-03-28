@@ -1,0 +1,120 @@
+{{define "content"}}
+<header class="page-header">
+    <h1>{{if .IsNew}}New Asset{{else}}Edit Asset{{end}} — {{.Customer.Name}}</h1>
+</header>
+
+<div class="card">
+    <form id="asset-form"
+          {{if .IsNew}}hx-post="/api/v1/customers/{{uuidStr .Customer.ID}}/assets"{{else}}hx-put="/api/v1/assets/{{uuidStr .Asset.ID}}"{{end}}
+          hx-ext="json-enc"
+          hx-target="#form-message"
+          hx-swap="innerHTML">
+
+        <div id="form-message" aria-live="polite"></div>
+
+        <div class="form-group">
+            <label for="name">Name *</label>
+            <input type="text" id="name" name="name"
+                   value="{{if not .IsNew}}{{.Asset.Name}}{{end}}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="category_id">Category</label>
+            <select id="category_id" name="category_id"
+                    hx-get=""
+                    hx-target="#category-fields"
+                    hx-swap="innerHTML"
+                    hx-trigger="change"
+                    hx-include="[name='category_id']">
+                <option value="">— No category —</option>
+                {{range .Categories}}
+                <option value="{{uuidStr .ID}}" {{if eq (uuidStr .ID) (uuidStr $.Asset.CategoryID)}}selected{{end}}>{{.Name}}</option>
+                {{end}}
+            </select>
+        </div>
+
+        <div id="category-fields">
+            {{if .CategoryFields}}
+                {{template "category_fields" .CategoryFields}}
+            {{end}}
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description">{{if not .IsNew}}{{pgText .Asset.Description}}{{end}}</textarea>
+        </div>
+
+        <div class="flex gap-1">
+            <button type="submit" class="btn btn-primary">{{if .IsNew}}Create{{else}}Save{{end}}</button>
+            <a href="/customers/{{uuidStr .Customer.ID}}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Set hx-get URL dynamically based on selected category
+    var categorySelect = document.getElementById('category_id');
+    function updateFieldsUrl() {
+        var catId = categorySelect.value;
+        if (catId) {
+            var assetId = '{{if not .IsNew}}{{uuidStr .Asset.ID}}{{end}}';
+            var url = '/categories/' + catId + '/fields';
+            if (assetId) url += '?asset_id=' + assetId;
+            categorySelect.setAttribute('hx-get', url);
+        } else {
+            categorySelect.setAttribute('hx-get', '');
+            document.getElementById('category-fields').innerHTML = '';
+        }
+    }
+    categorySelect.addEventListener('change', updateFieldsUrl);
+    // Initialize on page load (for edit mode)
+    updateFieldsUrl();
+
+    // Build field_values from category field inputs before submit
+    document.getElementById('asset-form').addEventListener('htmx:configRequest', function(evt) {
+        var fieldInputs = document.querySelectorAll('[data-field-id]');
+        if (fieldInputs.length > 0) {
+            var fieldValues = {};
+            fieldInputs.forEach(function(input) {
+                var id = input.dataset.fieldId;
+                var type = input.dataset.fieldType;
+                if (type === 'boolean') {
+                    fieldValues[id] = input.checked;
+                } else if (type === 'number') {
+                    fieldValues[id] = input.value ? parseFloat(input.value) : null;
+                } else {
+                    fieldValues[id] = input.value || null;
+                }
+            });
+            evt.detail.parameters.field_values = fieldValues;
+        }
+        // Remove empty category_id so it doesn't send as ""
+        if (!categorySelect.value) {
+            delete evt.detail.parameters.category_id;
+        }
+    });
+
+    // Success: navigate to asset detail page
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.elt.id === 'asset-form' && evt.detail.successful) {
+            var response = JSON.parse(evt.detail.xhr.responseText);
+            if (response.id) {
+                window.location.href = '/customers/{{uuidStr .Customer.ID}}/assets/' + response.id;
+            }
+        }
+    });
+
+    // Error: show error message
+    document.body.addEventListener('htmx:responseError', function(evt) {
+        if (evt.detail.elt.id === 'asset-form') {
+            var msg = 'Error saving asset';
+            try {
+                var r = JSON.parse(evt.detail.xhr.responseText);
+                if (r.error) msg = r.error;
+            } catch(e) {}
+            document.getElementById('form-message').innerHTML =
+                '<div class="alert alert-error" role="alert">' + msg + '</div>';
+        }
+    });
+</script>
+{{end}}
