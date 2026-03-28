@@ -64,16 +64,12 @@
     form.querySelector('button[type="submit"]').addEventListener('click', function() {
         var body = {
             product_name: document.getElementById('product_name').value,
-            quantity: parseInt(document.getElementById('quantity').value) || 1
+            quantity: parseInt(document.getElementById('quantity').value) || 1,
+            license_key: document.getElementById('license_key').value || null,
+            valid_from: document.getElementById('valid_from').value || null,
+            valid_until: document.getElementById('valid_until').value || null,
+            user_assignment_id: document.getElementById('user_assignment_id').value || null
         };
-        var licenseKey = document.getElementById('license_key').value;
-        if (licenseKey) body.license_key = licenseKey;
-        var validFrom = document.getElementById('valid_from').value;
-        if (validFrom) body.valid_from = validFrom;
-        var validUntil = document.getElementById('valid_until').value;
-        if (validUntil) body.valid_until = validUntil;
-        var assignSelect = document.getElementById('user_assignment_id');
-        if (assignSelect.value) body.user_assignment_id = assignSelect.value;
 
         fetch(form.dataset.url, {
             method: form.dataset.method,

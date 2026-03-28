@@ -72,12 +72,12 @@ func (r *LicenseRepository) Update(ctx context.Context, id pgtype.UUID, input mo
 	var l model.License
 	err := r.pool.QueryRow(ctx,
 		`UPDATE licenses SET
-			user_assignment_id = COALESCE($2, user_assignment_id),
+			user_assignment_id = $2,
 			product_name       = COALESCE($3, product_name),
-			license_key        = COALESCE($4, license_key),
+			license_key        = $4,
 			quantity           = COALESCE($5, quantity),
-			valid_from         = COALESCE($6, valid_from),
-			valid_until        = COALESCE($7, valid_until)
+			valid_from         = $6,
+			valid_until        = $7
 		 WHERE id = $1
 		 RETURNING id, customer_id, user_assignment_id, product_name, license_key, quantity, valid_from, valid_until, created_at, updated_at`,
 		id, input.UserAssignmentID, input.ProductName, input.LicenseKey,
