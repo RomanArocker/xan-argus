@@ -100,6 +100,11 @@ func TestFieldDefinitionCRUD(t *testing.T) {
 		t.Error("Required should be false by default")
 	}
 
+	// sort_order of first field should be 0
+	if field.SortOrder != 0 {
+		t.Errorf("First field SortOrder = %d, want 0", field.SortOrder)
+	}
+
 	// GetByID should include field
 	got, err := repo.GetByID(ctx, cat.ID)
 	if err != nil {
@@ -120,6 +125,24 @@ func TestFieldDefinitionCRUD(t *testing.T) {
 	}
 	if updatedField.Name != "Memory (GB)" {
 		t.Errorf("Updated field Name = %q, want %q", updatedField.Name, "Memory (GB)")
+	}
+
+	// Create a second field — sort_order should auto-increment to 1
+	field2Input := model.CreateFieldDefinitionInput{
+		CategoryID: cat.ID,
+		Name:       "CPU Cores",
+		FieldType:  "number",
+	}
+	field2, err := repo.CreateField(ctx, field2Input)
+	if err != nil {
+		t.Fatalf("CreateField (2nd): %v", err)
+	}
+	if field2.SortOrder != 1 {
+		t.Errorf("Second field SortOrder = %d, want 1", field2.SortOrder)
+	}
+	// Delete field2 before the final cleanup assertions
+	if err := repo.DeleteField(ctx, field2.ID); err != nil {
+		t.Fatalf("DeleteField (field2): %v", err)
 	}
 
 	// Delete field

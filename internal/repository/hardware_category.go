@@ -116,16 +116,14 @@ func (r *HardwareCategoryRepository) ListFields(ctx context.Context, categoryID 
 }
 
 func (r *HardwareCategoryRepository) CreateField(ctx context.Context, input model.CreateFieldDefinitionInput) (model.FieldDefinition, error) {
-	sortOrder := 0
-	if input.SortOrder != nil {
-		sortOrder = *input.SortOrder
-	}
 	var f model.FieldDefinition
 	err := r.pool.QueryRow(ctx,
 		`INSERT INTO category_field_definitions (category_id, name, field_type, sort_order)
-		 VALUES ($1, $2, $3, $4)
+		 VALUES ($1, $2, $3,
+		   (SELECT COALESCE(MAX(sort_order), -1) + 1
+		    FROM category_field_definitions WHERE category_id = $1))
 		 RETURNING id, category_id, name, field_type, required, sort_order, created_at, updated_at`,
-		input.CategoryID, input.Name, input.FieldType, sortOrder,
+		input.CategoryID, input.Name, input.FieldType,
 	).Scan(&f.ID, &f.CategoryID, &f.Name, &f.FieldType, &f.Required, &f.SortOrder, &f.CreatedAt, &f.UpdatedAt)
 	if err != nil {
 		return f, fmt.Errorf("creating field definition: %w", err)
