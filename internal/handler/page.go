@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/xan-com/xan-argus/internal/model"
@@ -50,6 +52,7 @@ func (h *PageHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /customers/new", h.customerForm)
 	mux.HandleFunc("GET /customers/{id}", h.customerDetail)
 	mux.HandleFunc("GET /customers/{id}/edit", h.customerEditForm)
+	mux.HandleFunc("GET /customers/{customerId}/assets/{assetId}", h.assetDetail)
 	mux.HandleFunc("GET /users", h.userList)
 	mux.HandleFunc("GET /users/rows", h.userListRows)
 	mux.HandleFunc("GET /users/new", h.userForm)
@@ -303,5 +306,68 @@ func (h *PageHandler) categoryEditForm(w http.ResponseWriter, r *http.Request) {
 		"Title":    "Edit Category",
 		"Category": cat,
 		"IsNew":    false,
+	})
+}
+
+// AssetFieldDisplay holds a pre-resolved label+value pair for template rendering.
+type AssetFieldDisplay struct {
+	Name  string
+	Value string
+}
+
+func (h *PageHandler) assetDetail(w http.ResponseWriter, r *http.Request) {
+	customerID, err := parseUUID(r.PathValue("customerId"))
+	if err != nil {
+		http.Error(w, "invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	assetID, err := parseUUID(r.PathValue("assetId"))
+	if err != nil {
+		http.Error(w, "invalid asset ID", http.StatusBadRequest)
+		return
+	}
+	customer, err := h.customerRepo.GetByID(r.Context(), customerID)
+	if err != nil {
+		http.Error(w, "customer not found", http.StatusNotFound)
+		return
+	}
+	asset, err := h.assetRepo.GetByID(r.Context(), assetID)
+	if err != nil {
+		http.Error(w, "asset not found", http.StatusNotFound)
+		return
+	}
+	if uuidToStr(asset.CustomerID) != uuidToStr(customerID) {
+		http.Error(w, "asset not found", http.StatusNotFound)
+		return
+	}
+
+	var cat *model.HardwareCategory
+	var fields []AssetFieldDisplay
+	if asset.CategoryID.Valid {
+		// If category was deleted, err != nil → cat stays nil, fields stays empty.
+		// This is intentional: show asset without category fields rather than erroring.
+		c, err := h.hardwareCategoryRepo.GetByID(r.Context(), asset.CategoryID)
+		if err == nil {
+			cat = &c
+			// c.Fields is pre-sorted by sort_order, name from the repository query
+			var vals map[string]interface{}
+			if err := json.Unmarshal(asset.FieldValues, &vals); err == nil {
+				for _, fd := range c.Fields {
+					v := "—"
+					if raw, ok := vals[fd.Name]; ok && raw != nil {
+						v = fmt.Sprintf("%v", raw)
+					}
+					fields = append(fields, AssetFieldDisplay{Name: fd.Name, Value: v})
+				}
+			}
+		}
+	}
+
+	h.tmpl.RenderPage(w, "customers/asset_detail", map[string]any{
+		"Title":    asset.Name + " — " + customer.Name,
+		"Customer": customer,
+		"Asset":    asset,
+		"Category": cat,
+		"Fields":   fields,
 	})
 }

@@ -73,6 +73,7 @@ func NewTemplateEngine(templateDir string) (*TemplateEngine, error) {
 		filepath.Join(templateDir, "customers", "list.html"),
 		filepath.Join(templateDir, "customers", "detail.html"),
 		filepath.Join(templateDir, "customers", "form.html"),
+		filepath.Join(templateDir, "customers", "asset_detail.html"),
 		filepath.Join(templateDir, "users", "list.html"),
 		filepath.Join(templateDir, "users", "form.html"),
 		filepath.Join(templateDir, "services", "list.html"),
