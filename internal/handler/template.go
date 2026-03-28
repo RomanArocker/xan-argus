@@ -14,7 +14,6 @@ import (
 type TemplateEngine struct {
 	pages    map[string]*template.Template // page templates (layout + content)
 	partials *template.Template            // standalone partials (rows, etc.)
-	Version  string                        // app version string, injected into every page render
 }
 
 func newFuncMap() template.FuncMap {
@@ -118,7 +117,6 @@ func (e *TemplateEngine) RenderPage(w http.ResponseWriter, page string, data map
 	if data == nil {
 		data = map[string]any{}
 	}
-	data["Version"] = e.Version
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := t.ExecuteTemplate(w, "layout", data); err != nil {
 		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
