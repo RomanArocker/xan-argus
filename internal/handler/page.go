@@ -340,6 +340,20 @@ func buildUserAssignmentDisplayList(assignments []model.UserAssignment, users []
 	return result
 }
 
+// buildAssignmentMap builds a map of assignment UUID → "LastName, FirstName (Role)" for template table display.
+func buildAssignmentMap(assignments []model.UserAssignment, users []model.User) map[string]string {
+	userMap := make(map[string]string, len(users))
+	for _, u := range users {
+		userMap[uuidToStr(u.ID)] = u.LastName + ", " + u.FirstName
+	}
+	result := make(map[string]string, len(assignments))
+	for _, a := range assignments {
+		name := userMap[uuidToStr(a.UserID)]
+		result[uuidToStr(a.ID)] = name + " (" + a.Role + ")"
+	}
+	return result
+}
+
 // CategoryFieldData pairs a field definition with its current value for form rendering.
 type CategoryFieldData struct {
 	model.FieldDefinition
