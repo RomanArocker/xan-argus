@@ -55,14 +55,16 @@
     <header class="page-header"><h2>Licenses</h2></header>
     <div class="card">
         <table>
-            <thead><tr><th>Product</th><th>Quantity</th><th>Valid From</th><th>Valid Until</th><th></th></tr></thead>
+            <thead><tr><th>Product</th><th>Assigned to</th><th>Quantity</th><th>Valid From</th><th>Valid Until</th><th></th></tr></thead>
             <tbody>
                 {{range .Licenses}}
                 <tr>
-                    <td>{{.ProductName}}</td><td>{{.Quantity}}</td><td>{{formatPgDate .ValidFrom}}</td><td>{{formatPgDate .ValidUntil}}</td>
+                    <td><a href="/customers/{{uuidStr $.Customer.ID}}/licenses/{{uuidStr .ID}}">{{.ProductName}}</a></td>
+                    <td>{{if .UserAssignmentID.Valid}}{{mapGet $.LicenseAssignmentMap (uuidStr .UserAssignmentID)}}{{else}}<span class="text-muted">—</span>{{end}}</td>
+                    <td>{{.Quantity}}</td><td>{{formatPgDate .ValidFrom}}</td><td>{{formatPgDate .ValidUntil}}</td>
                     <td class="text-right"><button class="btn btn-danger btn-sm" hx-delete="/api/v1/licenses/{{uuidStr .ID}}" hx-confirm="Delete license '{{.ProductName}}'?" hx-target="closest tr" hx-swap="outerHTML swap:0.3s">Delete</button></td>
                 </tr>
-                {{else}}<tr><td colspan="5" class="text-muted">No licenses.</td></tr>{{end}}
+                {{else}}<tr><td colspan="6" class="text-muted">No licenses.</td></tr>{{end}}
             </tbody>
         </table>
     </div>
@@ -74,6 +76,12 @@
             <div id="form-msg-license" aria-live="polite"></div>
             <div class="form-group"><label>Product Name *</label><input type="text" name="product_name" required></div>
             <div class="form-group"><label>License Key</label><input type="text" name="license_key"></div>
+            <div class="form-group"><label>Assigned to</label>
+                <select name="user_assignment_id">
+                    <option value="">— Not assigned —</option>
+                    {{range .UserAssignmentDisplays}}<option value="{{uuidStr .ID}}">{{.DisplayName}}</option>{{end}}
+                </select>
+            </div>
             <div class="form-group"><label>Quantity *</label><input type="number" name="quantity" value="1" min="1" required></div>
             <button type="submit" class="btn btn-primary btn-sm">Save</button>
         </form>
