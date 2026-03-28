@@ -15,7 +15,10 @@
 </div>
 
 <section class="section">
-    <header class="page-header"><h2>Assets</h2></header>
+    <header class="page-header">
+        <h2>Assets</h2>
+        <a href="/customers/{{uuidStr .Customer.ID}}/assets/new" class="btn btn-primary btn-sm">+ New Asset</a>
+    </header>
     <div class="card">
         <table>
             <thead><tr><th>Name</th><th>Category</th><th>Description</th><th>Created</th><th></th></tr></thead>
