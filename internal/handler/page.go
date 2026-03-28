@@ -315,6 +315,12 @@ type AssetFieldDisplay struct {
 	Value string
 }
 
+// CategoryFieldData pairs a field definition with its current value for form rendering.
+type CategoryFieldData struct {
+	model.FieldDefinition
+	Value string // pre-filled value or empty string
+}
+
 func (h *PageHandler) assetDetail(w http.ResponseWriter, r *http.Request) {
 	customerID, err := parseUUID(r.PathValue("customerId"))
 	if err != nil {

@@ -64,6 +64,7 @@ func NewTemplateEngine(templateDir string) (*TemplateEngine, error) {
 		filepath.Join(templateDir, "users", "list_rows.html"),
 		filepath.Join(templateDir, "services", "list_rows.html"),
 		filepath.Join(templateDir, "categories", "list_rows.html"),
+		filepath.Join(templateDir, "assets", "fields_partial.html"),
 	}
 
 	// Page templates: each gets layout + all partials + its own content
@@ -80,6 +81,7 @@ func NewTemplateEngine(templateDir string) (*TemplateEngine, error) {
 		filepath.Join(templateDir, "services", "form.html"),
 		filepath.Join(templateDir, "categories", "list.html"),
 		filepath.Join(templateDir, "categories", "form.html"),
+		filepath.Join(templateDir, "assets", "form.html"),
 	}
 
 	for _, pf := range pageFiles {
