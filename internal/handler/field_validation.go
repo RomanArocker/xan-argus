@@ -55,8 +55,10 @@ func validateFieldValues(rawValues json.RawMessage, fields []model.FieldDefiniti
 			if err := json.Unmarshal(rawVal, &s); err != nil {
 				return fmt.Sprintf("field %q (%s) must be a date string (YYYY-MM-DD)", fd.Name, key)
 			}
-			if _, err := time.Parse("2006-01-02", s); err != nil {
-				return fmt.Sprintf("field %q (%s) must be in YYYY-MM-DD format", fd.Name, key)
+			if s != "" {
+				if _, err := time.Parse("2006-01-02", s); err != nil {
+					return fmt.Sprintf("field %q (%s) must be in YYYY-MM-DD format", fd.Name, key)
+				}
 			}
 		}
 	}

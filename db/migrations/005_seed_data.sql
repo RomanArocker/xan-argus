@@ -45,15 +45,15 @@ ON CONFLICT (id) DO NOTHING;
 -- category_field_definitions (category_id resolved by name subquery)
 -- Laptop fields
 INSERT INTO category_field_definitions (id, category_id, name, field_type, required, sort_order) VALUES
-    ('00000000-0000-0000-0000-000000000801', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'Hostname', 'text', true, 1),
-    ('00000000-0000-0000-0000-000000000802', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'Operating System', 'text', true, 2),
+    ('00000000-0000-0000-0000-000000000801', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'Hostname', 'text', false, 1),
+    ('00000000-0000-0000-0000-000000000802', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'Operating System', 'text', false, 2),
     ('00000000-0000-0000-0000-000000000803', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'RAM (GB)', 'number', false, 3),
     ('00000000-0000-0000-0000-000000000804', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'Storage (GB)', 'number', false, 4)
 ON CONFLICT (id) DO NOTHING;
 -- Server fields
 INSERT INTO category_field_definitions (id, category_id, name, field_type, required, sort_order) VALUES
-    ('00000000-0000-0000-0000-000000000805', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'Hostname', 'text', true, 1),
-    ('00000000-0000-0000-0000-000000000806', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'Operating System', 'text', true, 2),
+    ('00000000-0000-0000-0000-000000000805', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'Hostname', 'text', false, 1),
+    ('00000000-0000-0000-0000-000000000806', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'Operating System', 'text', false, 2),
     ('00000000-0000-0000-0000-000000000807', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'RAM (GB)', 'number', false, 3),
     ('00000000-0000-0000-0000-000000000808', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'CPU Cores', 'number', false, 4)
 ON CONFLICT (id) DO NOTHING;

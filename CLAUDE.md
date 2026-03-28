@@ -43,9 +43,13 @@ No service layer in MVP — handlers call repositories directly.
 
 - **PostgreSQL-first:** leverage DB constraints, triggers, JSONB, GIN indexes directly. Keep Go layer thin.
 - **Minimal dependencies:** prefer stdlib over third-party packages wherever reasonable.
-- **Strict error handling:** always wrap errors with `fmt.Errorf("context: %w", err)`, never ignore errors silently.
-- **API-first:** REST JSON under `/api/v1/`, standard pagination with `?limit=&offset=`, errors as `{"error": "message"}`.
-- **Minimal UI effort:** use existing `style.css` only — do not add new CSS frameworks, custom styles, or visual polish. Semantic HTML + HTMX handles the UI. Keep templates functional and concise; no decorative markup or token-heavy styling.
+- **No service layer:** handlers call repositories directly in MVP.
+- **Minimal UI effort:** semantic HTML + HTMX + existing `style.css` — no CSS frameworks.
+
+Detailed conventions for each layer are in `.claude/rules/` (auto-loaded):
+- `backend/` — handlers, repository, models, database/migrations
+- `frontend/` — templates, HTMX, styling
+- `shared/` — naming conventions across all layers
 
 ## Commands
 
@@ -58,6 +62,22 @@ goose -dir db/migrations postgres "$DATABASE_URL" up   # Run migrations
 docker compose up --build              # Run full stack
 ```
 
+## Code Exploration
+
+When exploring Go files to understand structure (not to edit), prefer AST-based tools over full reads:
+
+- **`smart_outline(file_path)`** — shows all functions, types, methods with signatures (bodies folded). Use this first.
+- **`smart_search(query)`** — finds functions/types by name across the codebase.
+- **`smart_unfold(file_path, symbol_name)`** — expands a single function body when needed.
+
+Only use `Read` on a Go file when you need to **edit** it (Edit tool requires content in context).
+
+Quick reference for this project:
+- Handlers: `internal/handler/*.go`
+- Repositories: `internal/repository/*.go`
+- Models: `internal/model/*.go`
+- Entry point: `cmd/server/main.go`
+
 ## Environment Variables
 
 - `DATABASE_URL` — PostgreSQL connection string (required)
@@ -68,10 +88,9 @@ docker compose up --build              # Run full stack
 
 - **Commits:** Conventional Commits format — `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`
 - Always propose a plan before implementing non-trivial changes.
+- **Push reminder:** After completing a feature, bugfix, or any meaningful chunk of work, remind the user to push to GitHub. Do NOT push automatically — wait for explicit approval.
 
 ## Gotchas
 
-- ON DELETE RESTRICT on all foreign keys — no cascading deletes
-- License consistency trigger enforces `user_assignment.customer_id` must match `licenses.customer_id`
-- JSONB fields (metadata, customizations) use GIN indexes
 - Auth is explicitly deferred — not in MVP scope
+- See `.claude/rules/backend/database.md` for FK, constraint, and JSONB conventions
