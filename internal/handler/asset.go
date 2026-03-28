@@ -73,6 +73,10 @@ func (h *AssetHandler) create(w http.ResponseWriter, r *http.Request) {
 	}
 	asset, err := h.repo.Create(r.Context(), input)
 	if err != nil {
+		if isFKViolation(err) {
+			writeError(w, http.StatusConflict, "invalid user_assignment_id or category_id")
+			return
+		}
 		writeError(w, http.StatusInternalServerError, "failed to create asset")
 		return
 	}
@@ -148,6 +152,10 @@ func (h *AssetHandler) update(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			writeError(w, http.StatusNotFound, "asset not found")
+			return
+		}
+		if isFKViolation(err) {
+			writeError(w, http.StatusConflict, "invalid user_assignment_id or category_id")
 			return
 		}
 		writeError(w, http.StatusInternalServerError, "failed to update asset")
