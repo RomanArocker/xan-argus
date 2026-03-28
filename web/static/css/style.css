@@ -114,3 +114,11 @@ dd { margin: 0; }
 .mb-1 { margin-bottom: 0.5rem; }
 .gap-1 { gap: 0.5rem; }
 .flex { display: flex; }
+
+footer {
+    margin-top: 2rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 0.875rem;
+}
