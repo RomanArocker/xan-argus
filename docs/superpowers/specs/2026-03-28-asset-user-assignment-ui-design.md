@@ -32,7 +32,12 @@ Add a `<select>` dropdown for `user_assignment_id` after the category dropdown:
 
 The handler builds a display-friendly list with `DisplayName` = `"LastName, FirstName (Role)"`.
 
-The existing form submit JavaScript must be updated to include `user_assignment_id` in the JSON body (same pattern as `category_id`).
+The existing form submit JavaScript (custom `fetch()`, not HTMX) must be updated to include `user_assignment_id` in the JSON body. Add after the existing `category_id` handling:
+
+```javascript
+var assignSelect = document.getElementById('user_assignment_id');
+if (assignSelect.value) body.user_assignment_id = assignSelect.value;
+```
 
 ### 2. Asset Detail (`web/templates/customers/asset_detail.html`)
 
@@ -51,9 +56,9 @@ Add a new `<dt>/<dd>` pair in the existing `<dl>`:
 
 Load user assignments for the customer and build display data:
 
-1. Call `userAssignmentRepo.ListByCustomer(ctx, customerID, params)`
-2. For each assignment, call `userRepo.GetByID(ctx, assignment.UserID)` to get the user name
-3. Build a slice of structs with `ID` and `DisplayName` fields
+1. Call `userAssignmentRepo.ListByCustomer(ctx, customerID, params)` to get all assignments
+2. Call `userRepo.List(ctx, params)` once to get all users, build a `userMap[uuid]string` of `ID → "LastName, FirstName"` (avoids N+1 queries — same pattern as `CategoryMap`)
+3. Iterate assignments, look up user name from map, build `[]UserAssignmentDisplay` with `DisplayName = "LastName, FirstName (Role)"`
 4. Pass as `"UserAssignments"` to the template
 
 #### `assetDetail`
