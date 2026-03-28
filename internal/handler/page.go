@@ -52,7 +52,10 @@ func (h *PageHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /customers/new", h.customerForm)
 	mux.HandleFunc("GET /customers/{id}", h.customerDetail)
 	mux.HandleFunc("GET /customers/{id}/edit", h.customerEditForm)
+	mux.HandleFunc("GET /customers/{customerId}/assets/new", h.assetForm)
 	mux.HandleFunc("GET /customers/{customerId}/assets/{assetId}", h.assetDetail)
+	mux.HandleFunc("GET /customers/{customerId}/assets/{assetId}/edit", h.assetEditForm)
+	mux.HandleFunc("GET /categories/{id}/fields", h.categoryFieldsPartial)
 	mux.HandleFunc("GET /users", h.userList)
 	mux.HandleFunc("GET /users/rows", h.userListRows)
 	mux.HandleFunc("GET /users/new", h.userForm)
@@ -377,4 +380,122 @@ func (h *PageHandler) assetDetail(w http.ResponseWriter, r *http.Request) {
 		"Category": cat,
 		"Fields":   fields,
 	})
+}
+
+func (h *PageHandler) assetForm(w http.ResponseWriter, r *http.Request) {
+	customerID, err := parseUUID(r.PathValue("customerId"))
+	if err != nil {
+		http.Error(w, "invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	customer, err := h.customerRepo.GetByID(r.Context(), customerID)
+	if err != nil {
+		http.Error(w, "customer not found", http.StatusNotFound)
+		return
+	}
+	categories, err := h.hardwareCategoryRepo.List(r.Context())
+	if err != nil {
+		http.Error(w, "failed to load categories", http.StatusInternalServerError)
+		return
+	}
+	h.tmpl.RenderPage(w, "assets/form", map[string]any{
+		"Title":      "New Asset — " + customer.Name,
+		"Customer":   customer,
+		"Asset":      model.Asset{},
+		"Categories": categories,
+		"IsNew":      true,
+	})
+}
+
+func (h *PageHandler) assetEditForm(w http.ResponseWriter, r *http.Request) {
+	customerID, err := parseUUID(r.PathValue("customerId"))
+	if err != nil {
+		http.Error(w, "invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	assetID, err := parseUUID(r.PathValue("assetId"))
+	if err != nil {
+		http.Error(w, "invalid asset ID", http.StatusBadRequest)
+		return
+	}
+	customer, err := h.customerRepo.GetByID(r.Context(), customerID)
+	if err != nil {
+		http.Error(w, "customer not found", http.StatusNotFound)
+		return
+	}
+	asset, err := h.assetRepo.GetByID(r.Context(), assetID)
+	if err != nil {
+		http.Error(w, "asset not found", http.StatusNotFound)
+		return
+	}
+	categories, err := h.hardwareCategoryRepo.List(r.Context())
+	if err != nil {
+		http.Error(w, "failed to load categories", http.StatusInternalServerError)
+		return
+	}
+
+	var categoryFields []CategoryFieldData
+	if asset.CategoryID.Valid {
+		cat, err := h.hardwareCategoryRepo.GetByID(r.Context(), asset.CategoryID)
+		if err == nil {
+			categoryFields = buildCategoryFieldData(cat.Fields, asset.FieldValues)
+		}
+	}
+
+	h.tmpl.RenderPage(w, "assets/form", map[string]any{
+		"Title":          "Edit Asset — " + customer.Name,
+		"Customer":       customer,
+		"Asset":          asset,
+		"Categories":     categories,
+		"CategoryFields": categoryFields,
+		"IsNew":          false,
+	})
+}
+
+func (h *PageHandler) categoryFieldsPartial(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid category ID", http.StatusBadRequest)
+		return
+	}
+	cat, err := h.hardwareCategoryRepo.GetByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, "category not found", http.StatusNotFound)
+		return
+	}
+
+	var fieldValues json.RawMessage
+	if assetIDStr := r.URL.Query().Get("asset_id"); assetIDStr != "" {
+		assetID, err := parseUUID(assetIDStr)
+		if err == nil {
+			asset, err := h.assetRepo.GetByID(r.Context(), assetID)
+			if err == nil {
+				fieldValues = asset.FieldValues
+			}
+		}
+	}
+
+	data := buildCategoryFieldData(cat.Fields, fieldValues)
+	h.tmpl.RenderPartial(w, "category_fields", data)
+}
+
+// buildCategoryFieldData merges field definitions with stored values for form rendering.
+func buildCategoryFieldData(fields []model.FieldDefinition, fieldValues json.RawMessage) []CategoryFieldData {
+	vals := make(map[string]interface{})
+	if len(fieldValues) > 0 {
+		json.Unmarshal(fieldValues, &vals) //nolint:errcheck
+	}
+
+	data := make([]CategoryFieldData, 0, len(fields))
+	for _, fd := range fields {
+		v := ""
+		if raw, ok := vals[uuidToStr(fd.ID)]; ok && raw != nil {
+			v = fmt.Sprintf("%v", raw)
+		}
+		data = append(data, CategoryFieldData{
+			FieldDefinition: fd,
+			Value:           v,
+		})
+	}
+	return data
 }
