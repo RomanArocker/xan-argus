@@ -10,7 +10,8 @@ Show and edit the `user_assignment_id` field on licenses in the web UI. The back
 - **No JOINs in repositories** — separate lookups and maps in page handler (existing project pattern)
 - **Dropdown select** for form input — same pattern as the asset user assignment dropdown
 - **dl/dt/dd** for detail display — consistent with asset detail page
-- **Map-based resolution** for license table on customer detail — avoids N+1 queries
+- **Map-based resolution** for license table on customer detail — load all assignments for the customer once, build a map (avoids N+1 queries, same approach as `CategoryMap`)
+- **No Go-layer validation of `user_assignment_id`** — the existing DB trigger (`check_license_customer_consistency`) enforces that the assignment belongs to the same customer; FK constraint handles existence
 
 ## Changes
 
@@ -43,12 +44,11 @@ Each row:
 Update `colspan` on empty state from `5` to `6`.
 
 The page handler builds a `LicenseAssignmentMap` (`map[string]string` of assignment UUID → "LastName, FirstName (Role)") by:
-1. Collecting all `UserAssignmentID` values from licenses
-2. Looking up each assignment via `userAssignmentRepo.GetByID()`
-3. Looking up user name via the existing `userMap` (already built for the Assigned Users section)
-4. Building display string: `"LastName, FirstName (Role)"`
+1. Loading all user assignments for the customer once via `userAssignmentRepo.ListByCustomer(ctx, customerID, listParams)` (already loaded for the "Assigned Users" section)
+2. Loading all users via `userRepo.List(ctx, listParams)`, building a `userMap[uuid]string` of `ID → "LastName, FirstName"`
+3. Iterating assignments, building `map[string]string` of `assignmentUUID → "LastName, FirstName (Role)"`
 
-Alternatively, reuse the same map-building approach used for `CategoryMap` — load all assignments for the customer once, build the map.
+This is the same map-building pattern used for `CategoryMap` — load once, build map, no N+1.
 
 ### 2. Customer Detail — "Add License" Form (`web/templates/customers/detail.html`)
 
@@ -58,12 +58,12 @@ Add user assignment dropdown to the inline "Add License" form, between License K
 <div class="form-group"><label>Assigned to</label>
     <select name="user_assignment_id">
         <option value="">— Not assigned —</option>
-        {{range .Assignments}}<option value="{{uuidStr .ID}}">{{.DisplayName}}</option>{{end}}
+        {{range .UserAssignmentDisplays}}<option value="{{uuidStr .ID}}">{{.DisplayName}}</option>{{end}}
     </select>
 </div>
 ```
 
-The `.Assignments` data is already loaded for the "Assigned Users" section. We need a display-friendly version with "LastName, FirstName (Role)" — build a `[]UserAssignmentDisplay` slice (reusing the existing `UserAssignmentDisplay` struct from the asset feature) in the page handler and pass it as a new template variable.
+The page handler builds a `[]UserAssignmentDisplay` slice (reusing the existing `UserAssignmentDisplay` struct from the asset feature) from the same assignments and user data already loaded for the `LicenseAssignmentMap`. Pass it as a new template variable `"UserAssignmentDisplays"` — distinct from the raw `.Assignments` used in the "Assigned Users" table.
 
 ### 3. New License Detail Page (`web/templates/licenses/detail.html`)
 
@@ -191,14 +191,14 @@ New template at `web/templates/licenses/form.html`:
 Add new routes in `RegisterRoutes`:
 
 ```go
-mux.HandleFunc("GET /customers/{customerId}/licenses/{id}", h.licenseDetail)
+mux.HandleFunc("GET /customers/{customerId}/licenses/{licenseId}", h.licenseDetail)
 mux.HandleFunc("GET /customers/{customerId}/licenses/new", h.licenseForm)
-mux.HandleFunc("GET /customers/{customerId}/licenses/{id}/edit", h.licenseEditForm)
+mux.HandleFunc("GET /customers/{customerId}/licenses/{licenseId}/edit", h.licenseEditForm)
 ```
 
 #### `licenseDetail`
 
-1. Parse `customerId` and `id` from path
+1. Parse `customerId` and `licenseId` from path via `r.PathValue("customerId")` and `r.PathValue("licenseId")`
 2. Load customer via `customerRepo.GetByID()`
 3. Load license via `licenseRepo.GetByID()`
 4. If `license.UserAssignmentID.Valid`:
@@ -209,7 +209,7 @@ mux.HandleFunc("GET /customers/{customerId}/licenses/{id}/edit", h.licenseEditFo
 
 #### `licenseForm` and `licenseEditForm`
 
-1. Parse `customerId` from path (and `id` for edit)
+1. Parse `customerId` via `r.PathValue("customerId")` (and `licenseId` via `r.PathValue("licenseId")` for edit)
 2. Load customer via `customerRepo.GetByID()`
 3. Load user assignments for the customer: `userAssignmentRepo.ListByCustomer()`
 4. Load all users: `userRepo.List()`, build `userMap[uuid]string`
@@ -223,7 +223,7 @@ Add `LicenseAssignmentMap` to template data:
 1. After loading licenses, collect unique `UserAssignmentID` values
 2. Build map using same user-assignment-to-display-name resolution
 3. Pass as `"LicenseAssignmentMap"` alongside existing template data
-4. Also build and pass `[]UserAssignmentDisplay` for the "Add License" form dropdown
+4. Also build and pass `[]UserAssignmentDisplay` as `"UserAssignmentDisplays"` for the "Add License" form dropdown
 
 ### 6. Template Engine Registration (`internal/handler/template.go`)
 
