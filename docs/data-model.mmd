@@ -33,6 +33,7 @@ erDiagram
         UUID id PK
         UUID customer_id FK
         UUID category_id FK "nullable"
+        UUID user_assignment_id FK "nullable"
         string name
         text description
         jsonb metadata
@@ -100,3 +101,4 @@ erDiagram
     services ||--o{ customer_services : "offered as"
     hardware_categories ||--o{ category_field_definitions : "defines fields"
     hardware_categories ||--o{ assets : "categorizes"
+    user_assignments ||--o{ assets : "assigned to (optional)"
