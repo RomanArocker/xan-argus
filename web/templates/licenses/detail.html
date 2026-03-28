@@ -1,0 +1,22 @@
+{{define "content"}}
+<header class="page-header">
+    <div>
+        <a href="/customers/{{uuidStr .Customer.ID}}">&larr; Back to {{.Customer.Name}}</a>
+        <h1>{{.License.ProductName}}</h1>
+    </div>
+    <a href="/customers/{{uuidStr .Customer.ID}}/licenses/{{uuidStr .License.ID}}/edit" class="btn btn-primary">Edit</a>
+</header>
+
+<div class="card mb-1">
+    <dl>
+        <dt>Product Name</dt><dd>{{.License.ProductName}}</dd>
+        <dt>License Key</dt><dd>{{default "—" (pgText .License.LicenseKey)}}</dd>
+        <dt>Quantity</dt><dd>{{.License.Quantity}}</dd>
+        <dt>Valid From</dt><dd>{{formatPgDate .License.ValidFrom}}</dd>
+        <dt>Valid Until</dt><dd>{{formatPgDate .License.ValidUntil}}</dd>
+        <dt>Assigned to</dt><dd>{{if .AssignedUser}}{{.AssignedUser}}{{else}}—{{end}}</dd>
+        <dt>Created</dt><dd>{{formatDateTime .License.CreatedAt}}</dd>
+        <dt>Updated</dt><dd>{{formatDateTime .License.UpdatedAt}}</dd>
+    </dl>
+</div>
+{{end}}

@@ -56,6 +56,9 @@ func (h *PageHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /customers/{customerId}/assets/new", h.assetForm)
 	mux.HandleFunc("GET /customers/{customerId}/assets/{assetId}", h.assetDetail)
 	mux.HandleFunc("GET /customers/{customerId}/assets/{assetId}/edit", h.assetEditForm)
+	mux.HandleFunc("GET /customers/{customerId}/licenses/new", h.licenseForm)
+	mux.HandleFunc("GET /customers/{customerId}/licenses/{licenseId}", h.licenseDetail)
+	mux.HandleFunc("GET /customers/{customerId}/licenses/{licenseId}/edit", h.licenseEditForm)
 	mux.HandleFunc("GET /categories/{id}/fields", h.categoryFieldsPartial)
 	mux.HandleFunc("GET /users", h.userList)
 	mux.HandleFunc("GET /users/rows", h.userListRows)
@@ -509,6 +512,51 @@ func (h *PageHandler) assetEditForm(w http.ResponseWriter, r *http.Request) {
 		"UserAssignments": buildUserAssignmentDisplayList(assignments, users),
 	})
 }
+
+func (h *PageHandler) licenseDetail(w http.ResponseWriter, r *http.Request) {
+	customerID, err := parseUUID(r.PathValue("customerId"))
+	if err != nil {
+		http.Error(w, "invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	licenseID, err := parseUUID(r.PathValue("licenseId"))
+	if err != nil {
+		http.Error(w, "invalid license ID", http.StatusBadRequest)
+		return
+	}
+	customer, err := h.customerRepo.GetByID(r.Context(), customerID)
+	if err != nil {
+		http.Error(w, "customer not found", http.StatusNotFound)
+		return
+	}
+	license, err := h.licenseRepo.GetByID(r.Context(), licenseID)
+	if err != nil {
+		http.Error(w, "license not found", http.StatusNotFound)
+		return
+	}
+
+	var assignedUser string
+	if license.UserAssignmentID.Valid {
+		ua, err := h.userAssignmentRepo.GetByID(r.Context(), license.UserAssignmentID)
+		if err == nil {
+			u, err := h.userRepo.GetByID(r.Context(), ua.UserID)
+			if err == nil {
+				assignedUser = u.LastName + ", " + u.FirstName + " (" + ua.Role + ")"
+			}
+		}
+	}
+
+	h.tmpl.RenderPage(w, "licenses/detail", map[string]any{
+		"Title":        license.ProductName + " — " + customer.Name,
+		"Customer":     customer,
+		"License":      license,
+		"AssignedUser": assignedUser,
+	})
+}
+
+func (h *PageHandler) licenseForm(w http.ResponseWriter, r *http.Request) {}
+
+func (h *PageHandler) licenseEditForm(w http.ResponseWriter, r *http.Request) {}
 
 func (h *PageHandler) categoryFieldsPartial(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUID(r.PathValue("id"))
