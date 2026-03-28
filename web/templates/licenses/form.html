@@ -5,10 +5,10 @@
 
 <div class="card">
     <form id="license-form"
-          {{if .IsNew}}hx-post="/api/v1/customers/{{uuidStr .Customer.ID}}/licenses"{{else}}hx-put="/api/v1/licenses/{{uuidStr .License.ID}}"{{end}}
-          hx-ext="json-enc"
-          hx-target="#form-message"
-          hx-swap="innerHTML">
+          data-url="{{if .IsNew}}/api/v1/customers/{{uuidStr .Customer.ID}}/licenses{{else}}/api/v1/licenses/{{uuidStr .License.ID}}{{end}}"
+          data-method="{{if .IsNew}}POST{{else}}PUT{{end}}"
+          data-customer-id="{{uuidStr .Customer.ID}}"
+          onsubmit="return false;">
 
         <div id="form-message" aria-live="polite"></div>
 
@@ -60,24 +60,39 @@
 </div>
 
 <script>
-    document.body.addEventListener('htmx:afterRequest', function(evt) {
-        if (evt.detail.elt.id === 'license-form' && evt.detail.successful) {
-            var response = JSON.parse(evt.detail.xhr.responseText);
-            if (response.id) {
-                window.location.href = '/customers/{{uuidStr .Customer.ID}}/licenses/' + response.id;
+    var form = document.getElementById('license-form');
+    form.querySelector('button[type="submit"]').addEventListener('click', function() {
+        var body = {
+            product_name: document.getElementById('product_name').value,
+            quantity: parseInt(document.getElementById('quantity').value) || 1
+        };
+        var licenseKey = document.getElementById('license_key').value;
+        if (licenseKey) body.license_key = licenseKey;
+        var validFrom = document.getElementById('valid_from').value;
+        if (validFrom) body.valid_from = validFrom;
+        var validUntil = document.getElementById('valid_until').value;
+        if (validUntil) body.valid_until = validUntil;
+        var assignSelect = document.getElementById('user_assignment_id');
+        if (assignSelect.value) body.user_assignment_id = assignSelect.value;
+
+        fetch(form.dataset.url, {
+            method: form.dataset.method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        }).then(function(resp) {
+            return resp.json().then(function(data) { return {ok: resp.ok, data: data}; });
+        }).then(function(result) {
+            if (result.ok && result.data.id) {
+                window.location.href = '/customers/' + form.dataset.customerId + '/licenses/' + result.data.id;
+            } else {
+                var msg = result.data.error || 'Error saving';
+                document.getElementById('form-message').innerHTML =
+                    '<div class="alert alert-error" role="alert">' + msg + '</div>';
             }
-        }
-    });
-    document.body.addEventListener('htmx:responseError', function(evt) {
-        if (evt.detail.elt.id === 'license-form') {
-            var msg = 'Error saving';
-            try {
-                var r = JSON.parse(evt.detail.xhr.responseText);
-                if (r.error) msg = r.error;
-            } catch(e) {}
+        }).catch(function() {
             document.getElementById('form-message').innerHTML =
-                '<div class="alert alert-error" role="alert">' + msg + '</div>';
-        }
+                '<div class="alert alert-error" role="alert">Error saving</div>';
+        });
     });
 </script>
 {{end}}
