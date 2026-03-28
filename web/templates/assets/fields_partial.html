@@ -1,0 +1,27 @@
+{{define "category_fields"}}
+{{range .}}
+<div class="form-group">
+    <label for="field-{{uuidStr .ID}}">{{.Name}}{{if .Required}} *{{end}}</label>
+    {{if eq .FieldType "text"}}
+        <input type="text" id="field-{{uuidStr .ID}}"
+               data-field-id="{{uuidStr .ID}}" data-field-type="text"
+               value="{{.Value}}"
+               {{if .Required}}required{{end}}>
+    {{else if eq .FieldType "number"}}
+        <input type="number" id="field-{{uuidStr .ID}}"
+               data-field-id="{{uuidStr .ID}}" data-field-type="number"
+               value="{{.Value}}" step="any"
+               {{if .Required}}required{{end}}>
+    {{else if eq .FieldType "date"}}
+        <input type="date" id="field-{{uuidStr .ID}}"
+               data-field-id="{{uuidStr .ID}}" data-field-type="date"
+               value="{{.Value}}"
+               {{if .Required}}required{{end}}>
+    {{else if eq .FieldType "boolean"}}
+        <input type="checkbox" id="field-{{uuidStr .ID}}"
+               data-field-id="{{uuidStr .ID}}" data-field-type="boolean"
+               {{if eq .Value "true"}}checked{{end}}>
+    {{end}}
+</div>
+{{end}}
+{{end}}
