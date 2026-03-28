@@ -1,7 +1,7 @@
 -- db/migrations/005_seed_data.sql
 -- Seed data for development and testing.
 -- Inserts 3 customers, 6 users, 3 services, 5 user assignments,
--- 8 assets, 6 licenses, and 4 customer services with predictable UUIDs.
+-- 14 field definitions, 8 assets, 6 licenses, and 4 customer services with predictable UUIDs.
 
 -- +goose Up
 
@@ -42,16 +42,58 @@ INSERT INTO user_assignments (id, user_id, customer_id, role, email, phone, note
     ('00000000-0000-0000-0000-000000000405', '00000000-0000-0000-0000-000000000202', '00000000-0000-0000-0000-000000000103', 'IT Consultant', 'a.weber@techstart.ch', '+41 61 555 12 35', 'External consultant, on-site Tuesdays.')
 ON CONFLICT (id) DO NOTHING;
 
+-- category_field_definitions (category_id resolved by name subquery)
+-- Laptop fields
+INSERT INTO category_field_definitions (id, category_id, name, field_type, required, sort_order) VALUES
+    ('00000000-0000-0000-0000-000000000801', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'Hostname', 'text', true, 1),
+    ('00000000-0000-0000-0000-000000000802', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'Operating System', 'text', true, 2),
+    ('00000000-0000-0000-0000-000000000803', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'RAM (GB)', 'number', false, 3),
+    ('00000000-0000-0000-0000-000000000804', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'Storage (GB)', 'number', false, 4)
+ON CONFLICT (id) DO NOTHING;
+-- Server fields
+INSERT INTO category_field_definitions (id, category_id, name, field_type, required, sort_order) VALUES
+    ('00000000-0000-0000-0000-000000000805', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'Hostname', 'text', true, 1),
+    ('00000000-0000-0000-0000-000000000806', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'Operating System', 'text', true, 2),
+    ('00000000-0000-0000-0000-000000000807', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'RAM (GB)', 'number', false, 3),
+    ('00000000-0000-0000-0000-000000000808', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'CPU Cores', 'number', false, 4)
+ON CONFLICT (id) DO NOTHING;
+-- Printer fields
+INSERT INTO category_field_definitions (id, category_id, name, field_type, required, sort_order) VALUES
+    ('00000000-0000-0000-0000-000000000809', (SELECT id FROM hardware_categories WHERE name = 'Printer'), 'Print Technology', 'text', false, 1),
+    ('00000000-0000-0000-0000-000000000810', (SELECT id FROM hardware_categories WHERE name = 'Printer'), 'Color', 'boolean', false, 2)
+ON CONFLICT (id) DO NOTHING;
+-- Monitor fields
+INSERT INTO category_field_definitions (id, category_id, name, field_type, required, sort_order) VALUES
+    ('00000000-0000-0000-0000-000000000811', (SELECT id FROM hardware_categories WHERE name = 'Monitor'), 'Resolution', 'text', false, 1),
+    ('00000000-0000-0000-0000-000000000812', (SELECT id FROM hardware_categories WHERE name = 'Monitor'), 'Panel Size (inches)', 'number', false, 2)
+ON CONFLICT (id) DO NOTHING;
+-- Network Device fields
+INSERT INTO category_field_definitions (id, category_id, name, field_type, required, sort_order) VALUES
+    ('00000000-0000-0000-0000-000000000813', (SELECT id FROM hardware_categories WHERE name = 'Network Device'), 'Firmware Version', 'text', false, 1),
+    ('00000000-0000-0000-0000-000000000814', (SELECT id FROM hardware_categories WHERE name = 'Network Device'), 'Port Count', 'number', false, 2)
+ON CONFLICT (id) DO NOTHING;
+
 -- assets (category_id resolved by name subquery)
 INSERT INTO assets (id, customer_id, category_id, name, description, metadata, field_values) VALUES
-    ('00000000-0000-0000-0000-000000000501', '00000000-0000-0000-0000-000000000101', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'ThinkPad T14s #1', 'Hans Müller primary workstation', '{"serial": "PF-4A2B8C", "warranty_until": "2027-06-15"}', '{}'),
-    ('00000000-0000-0000-0000-000000000502', '00000000-0000-0000-0000-000000000101', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'ThinkPad T14s #2', 'Anna Weber primary workstation', '{"serial": "PF-7D3E9F", "warranty_until": "2027-06-15"}', '{}'),
-    ('00000000-0000-0000-0000-000000000503', '00000000-0000-0000-0000-000000000101', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'PowerEdge R750', 'On-premise file server', '{"serial": "SV-1122334", "rack_position": "A3-U12", "warranty_until": "2028-01-30"}', '{}'),
-    ('00000000-0000-0000-0000-000000000504', '00000000-0000-0000-0000-000000000102', (SELECT id FROM hardware_categories WHERE name = 'Monitor'), 'Dell U2723QE', 'Klaus Schmidt office monitor', '{"serial": "MN-8877665"}', '{}'),
-    ('00000000-0000-0000-0000-000000000505', '00000000-0000-0000-0000-000000000102', (SELECT id FROM hardware_categories WHERE name = 'Printer'), 'HP LaserJet Pro M404', 'Shared office printer, 2nd floor', '{"serial": "PR-5544332", "ip_address": "192.168.1.50"}', '{}'),
-    ('00000000-0000-0000-0000-000000000506', '00000000-0000-0000-0000-000000000103', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'ProLiant DL380', 'Development server', '{"serial": "SV-9988776", "rack_position": "B1-U8"}', '{}'),
-    ('00000000-0000-0000-0000-000000000507', '00000000-0000-0000-0000-000000000103', (SELECT id FROM hardware_categories WHERE name = 'Network Device'), 'UniFi Dream Machine Pro', 'Main office router/firewall', '{"serial": "NW-1239876", "ip_address": "192.168.0.1"}', '{}'),
-    ('00000000-0000-0000-0000-000000000508', '00000000-0000-0000-0000-000000000103', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'MacBook Pro 16"', 'Lisa Berger primary workstation', '{"serial": "LP-APPLE01", "warranty_until": "2027-11-20"}', '{}')
+    -- Müller AG: Laptops + Server
+    ('00000000-0000-0000-0000-000000000501', '00000000-0000-0000-0000-000000000101', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'ThinkPad T14s #1', 'Hans Müller primary workstation', '{"serial": "PF-4A2B8C", "warranty_until": "2027-06-15"}',
+     '{"00000000-0000-0000-0000-000000000801": "PC-HM01", "00000000-0000-0000-0000-000000000802": "Windows 11 Pro", "00000000-0000-0000-0000-000000000803": 16, "00000000-0000-0000-0000-000000000804": 512}'),
+    ('00000000-0000-0000-0000-000000000502', '00000000-0000-0000-0000-000000000101', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'ThinkPad T14s #2', 'Anna Weber primary workstation', '{"serial": "PF-7D3E9F", "warranty_until": "2027-06-15"}',
+     '{"00000000-0000-0000-0000-000000000801": "PC-AW02", "00000000-0000-0000-0000-000000000802": "Windows 11 Pro", "00000000-0000-0000-0000-000000000803": 16, "00000000-0000-0000-0000-000000000804": 256}'),
+    ('00000000-0000-0000-0000-000000000503', '00000000-0000-0000-0000-000000000101', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'PowerEdge R750', 'On-premise file server', '{"serial": "SV-1122334", "rack_position": "A3-U12", "warranty_until": "2028-01-30"}',
+     '{"00000000-0000-0000-0000-000000000805": "SRV-FS01", "00000000-0000-0000-0000-000000000806": "Windows Server 2022", "00000000-0000-0000-0000-000000000807": 64, "00000000-0000-0000-0000-000000000808": 16}'),
+    -- Schmidt & Partner: Monitor + Printer
+    ('00000000-0000-0000-0000-000000000504', '00000000-0000-0000-0000-000000000102', (SELECT id FROM hardware_categories WHERE name = 'Monitor'), 'Dell U2723QE', 'Klaus Schmidt office monitor', '{"serial": "MN-8877665"}',
+     '{"00000000-0000-0000-0000-000000000811": "3840x2160", "00000000-0000-0000-0000-000000000812": 27}'),
+    ('00000000-0000-0000-0000-000000000505', '00000000-0000-0000-0000-000000000102', (SELECT id FROM hardware_categories WHERE name = 'Printer'), 'HP LaserJet Pro M404', 'Shared office printer, 2nd floor', '{"serial": "PR-5544332", "ip_address": "192.168.1.50"}',
+     '{"00000000-0000-0000-0000-000000000809": "Laser", "00000000-0000-0000-0000-000000000810": false}'),
+    -- TechStart GmbH: Server + Network Device + Laptop
+    ('00000000-0000-0000-0000-000000000506', '00000000-0000-0000-0000-000000000103', (SELECT id FROM hardware_categories WHERE name = 'Server'), 'ProLiant DL380', 'Development server', '{"serial": "SV-9988776", "rack_position": "B1-U8"}',
+     '{"00000000-0000-0000-0000-000000000805": "SRV-DEV01", "00000000-0000-0000-0000-000000000806": "Ubuntu 24.04 LTS", "00000000-0000-0000-0000-000000000807": 128, "00000000-0000-0000-0000-000000000808": 32}'),
+    ('00000000-0000-0000-0000-000000000507', '00000000-0000-0000-0000-000000000103', (SELECT id FROM hardware_categories WHERE name = 'Network Device'), 'UniFi Dream Machine Pro', 'Main office router/firewall', '{"serial": "NW-1239876", "ip_address": "192.168.0.1"}',
+     '{"00000000-0000-0000-0000-000000000813": "3.2.7", "00000000-0000-0000-0000-000000000814": 8}'),
+    ('00000000-0000-0000-0000-000000000508', '00000000-0000-0000-0000-000000000103', (SELECT id FROM hardware_categories WHERE name = 'Laptop'), 'MacBook Pro 16"', 'Lisa Berger primary workstation', '{"serial": "LP-APPLE01", "warranty_until": "2027-11-20"}',
+     '{"00000000-0000-0000-0000-000000000801": "MAC-LB01", "00000000-0000-0000-0000-000000000802": "macOS Sequoia", "00000000-0000-0000-0000-000000000803": 32, "00000000-0000-0000-0000-000000000804": 1024}')
 ON CONFLICT (id) DO NOTHING;
 
 -- licenses (user_assignment_id NULL where not applicable; customer_id must match assignment's customer_id)
@@ -88,6 +130,23 @@ DELETE FROM licenses WHERE id IN (
     '00000000-0000-0000-0000-000000000604',
     '00000000-0000-0000-0000-000000000605',
     '00000000-0000-0000-0000-000000000606'
+);
+
+DELETE FROM category_field_definitions WHERE id IN (
+    '00000000-0000-0000-0000-000000000801',
+    '00000000-0000-0000-0000-000000000802',
+    '00000000-0000-0000-0000-000000000803',
+    '00000000-0000-0000-0000-000000000804',
+    '00000000-0000-0000-0000-000000000805',
+    '00000000-0000-0000-0000-000000000806',
+    '00000000-0000-0000-0000-000000000807',
+    '00000000-0000-0000-0000-000000000808',
+    '00000000-0000-0000-0000-000000000809',
+    '00000000-0000-0000-0000-000000000810',
+    '00000000-0000-0000-0000-000000000811',
+    '00000000-0000-0000-0000-000000000812',
+    '00000000-0000-0000-0000-000000000813',
+    '00000000-0000-0000-0000-000000000814'
 );
 
 DELETE FROM assets WHERE id IN (

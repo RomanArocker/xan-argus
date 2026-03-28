@@ -29,6 +29,7 @@ We use fixed UUIDs so FKs can reference them reliably. Pattern: `00000000-0000-0
 | users (internal_staff) | `...0205` – `...0206` | 2 |
 | services | `...0301` – `...0303` | 3 |
 | user_assignments | `...0401` – `...0405` | 5 |
+| category_field_definitions | `...0801` – `...0814` | 14 |
 | assets | `...0501` – `...0508` | 8 |
 | licenses | `...0601` – `...0606` | 6 |
 | customer_services | `...0701` – `...0704` | 4 |
@@ -390,7 +391,8 @@ git commit -m "feat: complete seed migration with customer_services and rollback
 | users | 6 | 4 customer_staff + 2 internal_staff |
 | services | 3 | Managed IT, Cloud Backup, Security Audit |
 | user_assignments | 5 | Includes multi-customer assignment (Anna) |
-| assets | 8 | Mixed categories, realistic metadata |
+| category_field_definitions | 14 | Laptop(4), Server(4), Printer(2), Monitor(2), Network Device(2) |
+| assets | 8 | Mixed categories, realistic metadata + field_values |
 | licenses | 6 | Some with user assignment, some without |
 | customer_services | 4 | With JSONB customizations |
-| **Total** | **35 rows** | |
+| **Total** | **49 rows** | |
