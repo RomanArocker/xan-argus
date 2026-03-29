@@ -8,6 +8,7 @@ Each entity gets two handler types:
 
 1. **API Handler** (`customer.go`, `user.go`, etc.) — JSON CRUD under `/api/v1/`
 2. **Page Handler** (`page.go`) — HTML pages, all routes in one `PageHandler` struct
+3. **Import Handler** (`import.go`) — CSV import/export, multipart upload (see below)
 
 ### API Handler Pattern
 
@@ -59,6 +60,30 @@ Page route naming:
 - Nested resources: `GET /entity/{entityId}/sub/{subId}`
 
 Page handler method naming: `entityAction` (e.g., `customerList`, `customerListRows`, `customerForm`, `customerEditForm`, `customerDetail`)
+
+### Import Handler Pattern
+
+The `ImportHandler` in `import.go` is a non-CRUD handler for CSV import/export. It depends on the `importer` package (not repositories):
+
+```go
+type ImportHandler struct {
+    engine   *importer.Engine
+    exporter *importer.Exporter
+    registry *importer.Registry
+}
+
+func (h *ImportHandler) RegisterRoutes(mux *http.ServeMux) {
+    mux.HandleFunc("POST /api/v1/import/{entity}", h.importCSV)
+    mux.HandleFunc("GET /api/v1/import/{entity}/template", h.template)
+    mux.HandleFunc("GET /api/v1/export/{entity}", h.export)
+}
+```
+
+Key differences from CRUD handlers:
+- Uses `multipart/form-data` (not JSON) — parses via `r.ParseMultipartForm` + `r.FormFile("file")`
+- Routes use `{entity}` (entity name from registry), not `{id}`
+- Returns CSV downloads (Content-Type: `text/csv`, Content-Disposition: `attachment`) for template/export
+- Import returns `ImportResult` JSON with created/updated counts or error list
 
 ## Handler Flow
 
