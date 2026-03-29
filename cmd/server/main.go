@@ -8,6 +8,7 @@ import (
 
 	"github.com/xan-com/xan-argus/internal/database"
 	"github.com/xan-com/xan-argus/internal/handler"
+	"github.com/xan-com/xan-argus/internal/importer"
 	"github.com/xan-com/xan-argus/internal/middleware"
 	"github.com/xan-com/xan-argus/internal/repository"
 )
@@ -48,6 +49,11 @@ func main() {
 	customerServiceRepo := repository.NewCustomerServiceRepository(pool)
 	hardwareCategoryRepo := repository.NewHardwareCategoryRepository(pool)
 
+	// Import/Export
+	importRegistry := importer.NewRegistry()
+	importEngine := importer.NewEngine(pool, importRegistry)
+	importExporter := importer.NewExporter(pool, importRegistry)
+
 	// Router
 	mux := http.NewServeMux()
 
@@ -62,7 +68,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("loading templates: %v", err)
 	}
-	handler.NewPageHandler(tmpl, customerRepo, userRepo, serviceRepo, userAssignmentRepo, assetRepo, licenseRepo, customerServiceRepo, hardwareCategoryRepo).RegisterRoutes(mux)
+	handler.NewPageHandler(tmpl, customerRepo, userRepo, serviceRepo, userAssignmentRepo, assetRepo, licenseRepo, customerServiceRepo, hardwareCategoryRepo, importRegistry).RegisterRoutes(mux)
 
 	// Register handlers
 	handler.NewCustomerHandler(customerRepo).RegisterRoutes(mux)
@@ -73,6 +79,7 @@ func main() {
 	handler.NewLicenseHandler(licenseRepo).RegisterRoutes(mux)
 	handler.NewCustomerServiceHandler(customerServiceRepo).RegisterRoutes(mux)
 	handler.NewHardwareCategoryHandler(hardwareCategoryRepo).RegisterRoutes(mux)
+	handler.NewImportHandler(importEngine, importExporter, importRegistry).RegisterRoutes(mux)
 
 	// Static files
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
