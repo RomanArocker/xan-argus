@@ -37,7 +37,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id pgtype.UUID) (model.Use
 	var u model.User
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, type, first_name, last_name, created_at, updated_at
-		 FROM users WHERE id = $1`, id,
+		 FROM users WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&u.ID, &u.Type, &u.FirstName, &u.LastName, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		return u, fmt.Errorf("getting user: %w", err)
@@ -50,7 +50,7 @@ func (r *UserRepository) List(ctx context.Context, params model.ListParams) ([]m
 	query := `SELECT id, type, first_name, last_name, created_at, updated_at FROM users`
 	args := []any{}
 	argN := 1
-	clauses := []string{}
+	clauses := []string{"deleted_at IS NULL"}
 	if params.Filter != "" {
 		clauses = append(clauses, fmt.Sprintf(`type = $%d`, argN))
 		args = append(args, params.Filter)
@@ -82,7 +82,7 @@ func (r *UserRepository) Update(ctx context.Context, id pgtype.UUID, input model
 			type = COALESCE($2, type),
 			first_name = COALESCE($3, first_name),
 			last_name = COALESCE($4, last_name)
-		 WHERE id = $1
+		 WHERE id = $1 AND deleted_at IS NULL
 		 RETURNING id, type, first_name, last_name, created_at, updated_at`,
 		id, input.Type, input.FirstName, input.LastName,
 	).Scan(&u.ID, &u.Type, &u.FirstName, &u.LastName, &u.CreatedAt, &u.UpdatedAt)
@@ -93,7 +93,7 @@ func (r *UserRepository) Update(ctx context.Context, id pgtype.UUID, input model
 }
 
 func (r *UserRepository) Delete(ctx context.Context, id pgtype.UUID) error {
-	result, err := r.pool.Exec(ctx, `DELETE FROM users WHERE id = $1`, id)
+	result, err := r.pool.Exec(ctx, `UPDATE users SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`, id)
 	if err != nil {
 		return fmt.Errorf("deleting user: %w", err)
 	}

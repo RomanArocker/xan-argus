@@ -43,7 +43,7 @@ func (r *AssetRepository) GetByID(ctx context.Context, id pgtype.UUID) (model.As
 	var a model.Asset
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, customer_id, category_id, user_assignment_id, name, description, metadata, field_values, created_at, updated_at
-		 FROM assets WHERE id = $1`, id,
+		 FROM assets WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&a.ID, &a.CustomerID, &a.CategoryID, &a.UserAssignmentID, &a.Name, &a.Description, &a.Metadata, &a.FieldValues, &a.CreatedAt, &a.UpdatedAt)
 	if err != nil {
 		return a, fmt.Errorf("getting asset: %w", err)
@@ -54,7 +54,7 @@ func (r *AssetRepository) GetByID(ctx context.Context, id pgtype.UUID) (model.As
 func (r *AssetRepository) ListByCustomer(ctx context.Context, customerID pgtype.UUID, params model.ListParams) ([]model.Asset, error) {
 	params.Normalize()
 	query := `SELECT id, customer_id, category_id, user_assignment_id, name, description, metadata, field_values, created_at, updated_at
-	          FROM assets WHERE customer_id = $1`
+	          FROM assets WHERE customer_id = $1 AND deleted_at IS NULL`
 	args := []any{customerID}
 	argN := 2
 	if params.Filter != "" {
@@ -90,7 +90,7 @@ func (r *AssetRepository) Update(ctx context.Context, id pgtype.UUID, input mode
 			description        = COALESCE($5, description),
 			metadata           = COALESCE($6, metadata),
 			field_values       = COALESCE($7, field_values)
-		 WHERE id = $1
+		 WHERE id = $1 AND deleted_at IS NULL
 		 RETURNING id, customer_id, category_id, user_assignment_id, name, description, metadata, field_values, created_at, updated_at`,
 		id, input.CategoryID, input.UserAssignmentID, input.Name, input.Description, input.Metadata, input.FieldValues,
 	).Scan(&a.ID, &a.CustomerID, &a.CategoryID, &a.UserAssignmentID, &a.Name, &a.Description, &a.Metadata, &a.FieldValues, &a.CreatedAt, &a.UpdatedAt)
@@ -101,7 +101,7 @@ func (r *AssetRepository) Update(ctx context.Context, id pgtype.UUID, input mode
 }
 
 func (r *AssetRepository) Delete(ctx context.Context, id pgtype.UUID) error {
-	result, err := r.pool.Exec(ctx, `DELETE FROM assets WHERE id = $1`, id)
+	result, err := r.pool.Exec(ctx, `UPDATE assets SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`, id)
 	if err != nil {
 		return fmt.Errorf("deleting asset: %w", err)
 	}

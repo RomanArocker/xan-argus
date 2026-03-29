@@ -36,7 +36,7 @@ func (r *UserAssignmentRepository) GetByID(ctx context.Context, id pgtype.UUID) 
 	var a model.UserAssignment
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, user_id, customer_id, role, email, phone, notes, created_at, updated_at
-		 FROM user_assignments WHERE id = $1`, id,
+		 FROM user_assignments WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&a.ID, &a.UserID, &a.CustomerID, &a.Role, &a.Email, &a.Phone, &a.Notes, &a.CreatedAt, &a.UpdatedAt)
 	if err != nil {
 		return a, fmt.Errorf("getting user assignment: %w", err)
@@ -47,7 +47,7 @@ func (r *UserAssignmentRepository) GetByID(ctx context.Context, id pgtype.UUID) 
 func (r *UserAssignmentRepository) ListByCustomer(ctx context.Context, customerID pgtype.UUID, params model.ListParams) ([]model.UserAssignment, error) {
 	params.Normalize()
 	query := `SELECT id, user_id, customer_id, role, email, phone, notes, created_at, updated_at
-	          FROM user_assignments WHERE customer_id = $1`
+	          FROM user_assignments WHERE customer_id = $1 AND deleted_at IS NULL`
 	args := []any{customerID}
 	argN := 2
 	if params.Search != "" {
@@ -73,7 +73,7 @@ func (r *UserAssignmentRepository) Update(ctx context.Context, id pgtype.UUID, i
 			email = COALESCE($3, email),
 			phone = COALESCE($4, phone),
 			notes = COALESCE($5, notes)
-		 WHERE id = $1
+		 WHERE id = $1 AND deleted_at IS NULL
 		 RETURNING id, user_id, customer_id, role, email, phone, notes, created_at, updated_at`,
 		id, input.Role, input.Email, input.Phone, input.Notes,
 	).Scan(&a.ID, &a.UserID, &a.CustomerID, &a.Role, &a.Email, &a.Phone, &a.Notes, &a.CreatedAt, &a.UpdatedAt)
@@ -84,7 +84,7 @@ func (r *UserAssignmentRepository) Update(ctx context.Context, id pgtype.UUID, i
 }
 
 func (r *UserAssignmentRepository) Delete(ctx context.Context, id pgtype.UUID) error {
-	result, err := r.pool.Exec(ctx, `DELETE FROM user_assignments WHERE id = $1`, id)
+	result, err := r.pool.Exec(ctx, `UPDATE user_assignments SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`, id)
 	if err != nil {
 		return fmt.Errorf("deleting user assignment: %w", err)
 	}

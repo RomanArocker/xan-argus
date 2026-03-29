@@ -40,7 +40,7 @@ func (r *CustomerServiceRepository) GetByID(ctx context.Context, id pgtype.UUID)
 	var cs model.CustomerService
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, customer_id, service_id, customizations, notes, created_at, updated_at
-		 FROM customer_services WHERE id = $1`, id,
+		 FROM customer_services WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&cs.ID, &cs.CustomerID, &cs.ServiceID, &cs.Customizations, &cs.Notes, &cs.CreatedAt, &cs.UpdatedAt)
 	if err != nil {
 		return cs, fmt.Errorf("getting customer service: %w", err)
@@ -51,7 +51,7 @@ func (r *CustomerServiceRepository) GetByID(ctx context.Context, id pgtype.UUID)
 func (r *CustomerServiceRepository) ListByCustomer(ctx context.Context, customerID pgtype.UUID, params model.ListParams) ([]model.CustomerService, error) {
 	params.Normalize()
 	query := `SELECT id, customer_id, service_id, customizations, notes, created_at, updated_at
-	          FROM customer_services WHERE customer_id = $1`
+	          FROM customer_services WHERE customer_id = $1 AND deleted_at IS NULL`
 	args := []any{customerID}
 	argN := 2
 	if params.Search != "" {
@@ -75,7 +75,7 @@ func (r *CustomerServiceRepository) Update(ctx context.Context, id pgtype.UUID, 
 		`UPDATE customer_services SET
 			customizations = COALESCE($2, customizations),
 			notes          = COALESCE($3, notes)
-		 WHERE id = $1
+		 WHERE id = $1 AND deleted_at IS NULL
 		 RETURNING id, customer_id, service_id, customizations, notes, created_at, updated_at`,
 		id, input.Customizations, input.Notes,
 	).Scan(&cs.ID, &cs.CustomerID, &cs.ServiceID, &cs.Customizations, &cs.Notes, &cs.CreatedAt, &cs.UpdatedAt)
@@ -86,7 +86,7 @@ func (r *CustomerServiceRepository) Update(ctx context.Context, id pgtype.UUID, 
 }
 
 func (r *CustomerServiceRepository) Delete(ctx context.Context, id pgtype.UUID) error {
-	result, err := r.pool.Exec(ctx, `DELETE FROM customer_services WHERE id = $1`, id)
+	result, err := r.pool.Exec(ctx, `UPDATE customer_services SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`, id)
 	if err != nil {
 		return fmt.Errorf("deleting customer service: %w", err)
 	}

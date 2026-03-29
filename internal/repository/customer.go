@@ -36,7 +36,7 @@ func (r *CustomerRepository) GetByID(ctx context.Context, id pgtype.UUID) (model
 	var c model.Customer
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, name, contact_email, notes, created_at, updated_at
-		 FROM customers WHERE id = $1`, id,
+		 FROM customers WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&c.ID, &c.Name, &c.ContactEmail, &c.Notes, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
 		return c, fmt.Errorf("getting customer: %w", err)
@@ -46,10 +46,10 @@ func (r *CustomerRepository) GetByID(ctx context.Context, id pgtype.UUID) (model
 
 func (r *CustomerRepository) List(ctx context.Context, params model.ListParams) ([]model.Customer, error) {
 	params.Normalize()
-	query := `SELECT id, name, contact_email, notes, created_at, updated_at FROM customers`
+	query := `SELECT id, name, contact_email, notes, created_at, updated_at FROM customers WHERE deleted_at IS NULL`
 	args := []any{}
 	if params.Search != "" {
-		query += ` WHERE name ILIKE $1`
+		query += ` AND name ILIKE $1`
 		args = append(args, "%"+params.Search+"%")
 	}
 	query += fmt.Sprintf(` ORDER BY name LIMIT $%d OFFSET $%d`, len(args)+1, len(args)+2)
@@ -70,7 +70,7 @@ func (r *CustomerRepository) Update(ctx context.Context, id pgtype.UUID, input m
 			name = COALESCE($2, name),
 			contact_email = COALESCE($3, contact_email),
 			notes = COALESCE($4, notes)
-		 WHERE id = $1
+		 WHERE id = $1 AND deleted_at IS NULL
 		 RETURNING id, name, contact_email, notes, created_at, updated_at`,
 		id, input.Name, input.ContactEmail, input.Notes,
 	).Scan(&c.ID, &c.Name, &c.ContactEmail, &c.Notes, &c.CreatedAt, &c.UpdatedAt)
@@ -81,7 +81,7 @@ func (r *CustomerRepository) Update(ctx context.Context, id pgtype.UUID, input m
 }
 
 func (r *CustomerRepository) Delete(ctx context.Context, id pgtype.UUID) error {
-	result, err := r.pool.Exec(ctx, `DELETE FROM customers WHERE id = $1`, id)
+	result, err := r.pool.Exec(ctx, `UPDATE customers SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`, id)
 	if err != nil {
 		return fmt.Errorf("deleting customer: %w", err)
 	}

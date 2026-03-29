@@ -38,7 +38,7 @@ func (r *LicenseRepository) GetByID(ctx context.Context, id pgtype.UUID) (model.
 	var l model.License
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, customer_id, user_assignment_id, product_name, license_key, quantity, valid_from, valid_until, created_at, updated_at
-		 FROM licenses WHERE id = $1`, id,
+		 FROM licenses WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&l.ID, &l.CustomerID, &l.UserAssignmentID, &l.ProductName, &l.LicenseKey,
 		&l.Quantity, &l.ValidFrom, &l.ValidUntil, &l.CreatedAt, &l.UpdatedAt)
 	if err != nil {
@@ -50,7 +50,7 @@ func (r *LicenseRepository) GetByID(ctx context.Context, id pgtype.UUID) (model.
 func (r *LicenseRepository) ListByCustomer(ctx context.Context, customerID pgtype.UUID, params model.ListParams) ([]model.License, error) {
 	params.Normalize()
 	query := `SELECT id, customer_id, user_assignment_id, product_name, license_key, quantity, valid_from, valid_until, created_at, updated_at
-	          FROM licenses WHERE customer_id = $1`
+	          FROM licenses WHERE customer_id = $1 AND deleted_at IS NULL`
 	args := []any{customerID}
 	argN := 2
 	if params.Search != "" {
@@ -78,7 +78,7 @@ func (r *LicenseRepository) Update(ctx context.Context, id pgtype.UUID, input mo
 			quantity           = COALESCE($5, quantity),
 			valid_from         = $6,
 			valid_until        = $7
-		 WHERE id = $1
+		 WHERE id = $1 AND deleted_at IS NULL
 		 RETURNING id, customer_id, user_assignment_id, product_name, license_key, quantity, valid_from, valid_until, created_at, updated_at`,
 		id, input.UserAssignmentID, input.ProductName, input.LicenseKey,
 		input.Quantity, input.ValidFrom, input.ValidUntil,
@@ -91,7 +91,7 @@ func (r *LicenseRepository) Update(ctx context.Context, id pgtype.UUID, input mo
 }
 
 func (r *LicenseRepository) Delete(ctx context.Context, id pgtype.UUID) error {
-	result, err := r.pool.Exec(ctx, `DELETE FROM licenses WHERE id = $1`, id)
+	result, err := r.pool.Exec(ctx, `UPDATE licenses SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`, id)
 	if err != nil {
 		return fmt.Errorf("deleting license: %w", err)
 	}

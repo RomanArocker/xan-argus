@@ -36,7 +36,7 @@ func (r *ServiceRepository) GetByID(ctx context.Context, id pgtype.UUID) (model.
 	var s model.Service
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, name, description, created_at, updated_at
-		 FROM services WHERE id = $1`, id,
+		 FROM services WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&s.ID, &s.Name, &s.Description, &s.CreatedAt, &s.UpdatedAt)
 	if err != nil {
 		return s, fmt.Errorf("getting service: %w", err)
@@ -46,10 +46,10 @@ func (r *ServiceRepository) GetByID(ctx context.Context, id pgtype.UUID) (model.
 
 func (r *ServiceRepository) List(ctx context.Context, params model.ListParams) ([]model.Service, error) {
 	params.Normalize()
-	query := `SELECT id, name, description, created_at, updated_at FROM services`
+	query := `SELECT id, name, description, created_at, updated_at FROM services WHERE deleted_at IS NULL`
 	args := []any{}
 	if params.Search != "" {
-		query += ` WHERE name ILIKE $1`
+		query += ` AND name ILIKE $1`
 		args = append(args, "%"+params.Search+"%")
 	}
 	query += fmt.Sprintf(` ORDER BY name LIMIT $%d OFFSET $%d`, len(args)+1, len(args)+2)
@@ -69,7 +69,7 @@ func (r *ServiceRepository) Update(ctx context.Context, id pgtype.UUID, input mo
 		`UPDATE services SET
 			name = COALESCE($2, name),
 			description = COALESCE($3, description)
-		 WHERE id = $1
+		 WHERE id = $1 AND deleted_at IS NULL
 		 RETURNING id, name, description, created_at, updated_at`,
 		id, input.Name, input.Description,
 	).Scan(&s.ID, &s.Name, &s.Description, &s.CreatedAt, &s.UpdatedAt)
@@ -80,7 +80,7 @@ func (r *ServiceRepository) Update(ctx context.Context, id pgtype.UUID, input mo
 }
 
 func (r *ServiceRepository) Delete(ctx context.Context, id pgtype.UUID) error {
-	result, err := r.pool.Exec(ctx, `DELETE FROM services WHERE id = $1`, id)
+	result, err := r.pool.Exec(ctx, `UPDATE services SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`, id)
 	if err != nil {
 		return fmt.Errorf("deleting service: %w", err)
 	}

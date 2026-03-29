@@ -38,7 +38,7 @@ func (r *HardwareCategoryRepository) GetByID(ctx context.Context, id pgtype.UUID
 	var c model.HardwareCategory
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, name, description, created_at, updated_at
-		 FROM hardware_categories WHERE id = $1`, id,
+		 FROM hardware_categories WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&c.ID, &c.Name, &c.Description, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
 		return c, fmt.Errorf("getting hardware category: %w", err)
@@ -55,7 +55,7 @@ func (r *HardwareCategoryRepository) GetByID(ctx context.Context, id pgtype.UUID
 func (r *HardwareCategoryRepository) List(ctx context.Context) ([]model.HardwareCategory, error) {
 	rows, err := r.pool.Query(ctx,
 		`SELECT id, name, description, created_at, updated_at
-		 FROM hardware_categories ORDER BY name`)
+		 FROM hardware_categories WHERE deleted_at IS NULL ORDER BY name`)
 	if err != nil {
 		return nil, fmt.Errorf("listing hardware categories: %w", err)
 	}
@@ -78,7 +78,7 @@ func (r *HardwareCategoryRepository) Update(ctx context.Context, id pgtype.UUID,
 		`UPDATE hardware_categories SET
 			name        = COALESCE($2, name),
 			description = COALESCE($3, description)
-		 WHERE id = $1
+		 WHERE id = $1 AND deleted_at IS NULL
 		 RETURNING id, name, description, created_at, updated_at`,
 		id, input.Name, input.Description,
 	).Scan(&c.ID, &c.Name, &c.Description, &c.CreatedAt, &c.UpdatedAt)
@@ -90,7 +90,7 @@ func (r *HardwareCategoryRepository) Update(ctx context.Context, id pgtype.UUID,
 
 func (r *HardwareCategoryRepository) Delete(ctx context.Context, id pgtype.UUID) error {
 	tag, err := r.pool.Exec(ctx,
-		`DELETE FROM hardware_categories WHERE id = $1`, id)
+		`UPDATE hardware_categories SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`, id)
 	if err != nil {
 		return fmt.Errorf("deleting hardware category: %w", err)
 	}
@@ -106,7 +106,7 @@ func (r *HardwareCategoryRepository) ListFields(ctx context.Context, categoryID 
 	rows, err := r.pool.Query(ctx,
 		`SELECT id, category_id, name, field_type, required, sort_order, created_at, updated_at
 		 FROM category_field_definitions
-		 WHERE category_id = $1
+		 WHERE category_id = $1 AND deleted_at IS NULL
 		 ORDER BY sort_order, name`, categoryID)
 	if err != nil {
 		return nil, fmt.Errorf("listing field definitions: %w", err)
@@ -137,7 +137,7 @@ func (r *HardwareCategoryRepository) UpdateField(ctx context.Context, fieldID pg
 		`UPDATE category_field_definitions SET
 			name       = COALESCE($2, name),
 			sort_order = COALESCE($3, sort_order)
-		 WHERE id = $1
+		 WHERE id = $1 AND deleted_at IS NULL
 		 RETURNING id, category_id, name, field_type, required, sort_order, created_at, updated_at`,
 		fieldID, input.Name, input.SortOrder,
 	).Scan(&f.ID, &f.CategoryID, &f.Name, &f.FieldType, &f.Required, &f.SortOrder, &f.CreatedAt, &f.UpdatedAt)
@@ -149,7 +149,7 @@ func (r *HardwareCategoryRepository) UpdateField(ctx context.Context, fieldID pg
 
 func (r *HardwareCategoryRepository) DeleteField(ctx context.Context, fieldID pgtype.UUID) error {
 	tag, err := r.pool.Exec(ctx,
-		`DELETE FROM category_field_definitions WHERE id = $1`, fieldID)
+		`UPDATE category_field_definitions SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`, fieldID)
 	if err != nil {
 		return fmt.Errorf("deleting field definition: %w", err)
 	}
