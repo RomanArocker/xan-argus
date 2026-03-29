@@ -90,6 +90,7 @@ func NewTemplateEngine(templateDir string) (*TemplateEngine, error) {
 		filepath.Join(templateDir, "assets", "form.html"),
 		filepath.Join(templateDir, "licenses", "detail.html"),
 		filepath.Join(templateDir, "licenses", "form.html"),
+		filepath.Join(templateDir, "import", "page.html"),
 	}
 
 	for _, pf := range pageFiles {

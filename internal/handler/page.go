@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/xan-com/xan-argus/internal/importer"
 	"github.com/xan-com/xan-argus/internal/model"
 	"github.com/xan-com/xan-argus/internal/repository"
 )
@@ -20,6 +21,7 @@ type PageHandler struct {
 	licenseRepo          *repository.LicenseRepository
 	customerServiceRepo  *repository.CustomerServiceRepository
 	hardwareCategoryRepo *repository.HardwareCategoryRepository
+	importRegistry       *importer.Registry
 }
 
 func NewPageHandler(
@@ -32,6 +34,7 @@ func NewPageHandler(
 	licenseRepo *repository.LicenseRepository,
 	customerServiceRepo *repository.CustomerServiceRepository,
 	hardwareCategoryRepo *repository.HardwareCategoryRepository,
+	importRegistry *importer.Registry,
 ) *PageHandler {
 	return &PageHandler{
 		tmpl:                 tmpl,
@@ -43,6 +46,7 @@ func NewPageHandler(
 		licenseRepo:          licenseRepo,
 		customerServiceRepo:  customerServiceRepo,
 		hardwareCategoryRepo: hardwareCategoryRepo,
+		importRegistry:       importRegistry,
 	}
 }
 
@@ -71,10 +75,18 @@ func (h *PageHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /categories", h.categoryList)
 	mux.HandleFunc("GET /categories/new", h.categoryForm)
 	mux.HandleFunc("GET /categories/{id}/edit", h.categoryEditForm)
+	mux.HandleFunc("GET /import", h.importPage)
 }
 
 func (h *PageHandler) home(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/customers", http.StatusFound)
+}
+
+func (h *PageHandler) importPage(w http.ResponseWriter, r *http.Request) {
+	h.tmpl.RenderPage(w, "import/page", map[string]any{
+		"Title":    "Data Import",
+		"Entities": h.importRegistry.OrderedNames(),
+	})
 }
 
 func (h *PageHandler) customerList(w http.ResponseWriter, r *http.Request) {

@@ -1,0 +1,99 @@
+{{define "content"}}
+<header class="page-header">
+    <h1>Data Import</h1>
+</header>
+
+<div class="card">
+    <section class="section">
+        <h2>Import CSV</h2>
+
+        <div class="form-group">
+            <label for="entity-select">Entity</label>
+            <select id="entity-select">
+                {{range .Entities}}
+                <option value="{{.}}">{{.}}</option>
+                {{end}}
+            </select>
+        </div>
+
+        <div class="flex gap-1 mb-1">
+            <a id="template-link" href="/api/v1/import/customers/template" class="btn btn-sm">Download Template</a>
+        </div>
+
+        <form id="import-form" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">CSV File</label>
+                <input type="file" id="file" name="file" accept=".csv" required>
+            </div>
+
+            <div id="import-message" aria-live="polite"></div>
+
+            <button type="submit" class="btn btn-primary">Import</button>
+        </form>
+    </section>
+
+    <section class="section">
+        <h2>Export Data</h2>
+        <p class="text-muted">Download all active records as CSV:</p>
+        <div class="flex gap-1" style="flex-wrap:wrap">
+            {{range .Entities}}
+            <a href="/api/v1/export/{{.}}" class="btn btn-sm">{{.}}</a>
+            {{end}}
+        </div>
+    </section>
+
+    <section class="section">
+        <h2>Recommended Import Order</h2>
+        <p class="text-muted">Import entities in this order to satisfy dependencies:</p>
+        <ol>
+            {{range .Entities}}
+            <li>{{.}}</li>
+            {{end}}
+        </ol>
+    </section>
+</div>
+
+<script>
+    document.getElementById('entity-select').addEventListener('change', function() {
+        document.getElementById('template-link').href = '/api/v1/import/' + this.value + '/template';
+    });
+
+    document.getElementById('import-form').addEventListener('submit', function(evt) {
+        evt.preventDefault();
+        var entity = document.getElementById('entity-select').value;
+        var fileInput = document.getElementById('file');
+        if (!fileInput.files.length) return;
+
+        var formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        var msgEl = document.getElementById('import-message');
+        msgEl.innerHTML = '<div class="alert">Importing...</div>';
+
+        fetch('/api/v1/import/' + entity, {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(resp) { return resp.json().then(function(data) { return {ok: resp.ok, data: data}; }); })
+        .then(function(result) {
+            if (result.ok) {
+                msgEl.innerHTML = '<div class="alert alert-success" role="alert">Import successful: ' +
+                    result.data.created + ' created, ' + result.data.updated + ' updated (' + result.data.total + ' total)</div>';
+            } else if (result.data.errors && result.data.errors.length > 0) {
+                var html = '<div class="alert alert-error" role="alert">Import failed with ' + result.data.errors.length + ' error(s):</div>';
+                html += '<table><thead><tr><th>Row</th><th>Column</th><th>Error</th></tr></thead><tbody>';
+                result.data.errors.forEach(function(e) {
+                    html += '<tr><td>' + e.row + '</td><td>' + (e.column || '') + '</td><td>' + e.message + '</td></tr>';
+                });
+                html += '</tbody></table>';
+                msgEl.innerHTML = html;
+            } else {
+                msgEl.innerHTML = '<div class="alert alert-error" role="alert">' + (result.data.error || 'Import failed') + '</div>';
+            }
+        })
+        .catch(function(err) {
+            msgEl.innerHTML = '<div class="alert alert-error" role="alert">Network error: ' + err.message + '</div>';
+        });
+    });
+</script>
+{{end}}

@@ -1,7 +1,10 @@
 {{define "content"}}
 <header class="page-header">
     <h1>Services</h1>
-    <a href="/services/new" class="btn btn-primary">+ New Service</a>
+    <div class="flex gap-1">
+        <a href="/api/v1/export/services" class="btn btn-sm">Export CSV</a>
+        <a href="/services/new" class="btn btn-primary">+ New Service</a>
+    </div>
 </header>
 <search class="search-bar">
     <input type="search" name="q" placeholder="Search services..."

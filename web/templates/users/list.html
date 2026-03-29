@@ -1,7 +1,10 @@
 {{define "content"}}
 <header class="page-header">
     <h1>Users</h1>
-    <a href="/users/new" class="btn btn-primary">+ New User</a>
+    <div class="flex gap-1">
+        <a href="/api/v1/export/users" class="btn btn-sm">Export CSV</a>
+        <a href="/users/new" class="btn btn-primary">+ New User</a>
+    </div>
 </header>
 <search class="search-bar">
     <input type="search" name="q" placeholder="Search users..."
