@@ -28,12 +28,13 @@ cmd/server/main.go          # Entry point
 internal/handler/            # HTTP parsing, routing, JSON/template rendering
 internal/repository/         # SQL via pgx, returns model structs
 internal/model/              # Plain Go structs, no methods
+internal/importer/           # CSV import/export engine, configs, FK resolver
 db/migrations/               # goose SQL migrations
 web/templates/               # Go HTML templates
 web/static/                  # CSS/JS assets
 ```
 
-No service layer in MVP — handlers call repositories directly.
+No service layer in MVP — handlers call repositories directly. Exception: `internal/importer/` is a cross-entity package for CSV import/export (engine, exporter, registry, per-entity configs).
 
 ## Language
 
@@ -77,6 +78,7 @@ Quick reference for this project:
 - Handlers: `internal/handler/*.go`
 - Repositories: `internal/repository/*.go`
 - Models: `internal/model/*.go`
+- Importer: `internal/importer/*.go`
 - Entry point: `cmd/server/main.go`
 
 ## Environment Variables
