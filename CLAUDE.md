@@ -42,6 +42,7 @@ No service layer in MVP — handlers call repositories directly.
 ## Architecture Principles
 
 - **PostgreSQL-first:** leverage DB constraints, triggers, JSONB, GIN indexes directly. Keep Go layer thin.
+- **Soft delete + audit trail:** no hard deletes — all tables use `deleted_at TIMESTAMPTZ` column. All read queries must filter with `WHERE deleted_at IS NULL`. Audit log via PostgreSQL triggers (append-only `audit_log` table). See `docs/superpowers/specs/2026-03-29-soft-delete-audit-trail-design.md`.
 - **Minimal dependencies:** prefer stdlib over third-party packages wherever reasonable.
 - **No service layer:** handlers call repositories directly in MVP.
 - **Minimal UI effort:** semantic HTML + HTMX + existing `style.css` — no CSS frameworks.
@@ -93,4 +94,6 @@ Quick reference for this project:
 ## Gotchas
 
 - Auth is explicitly deferred — not in MVP scope
+- **Soft delete filtering is mandatory:** every new read query (GetByID, List, custom) MUST include `WHERE deleted_at IS NULL` or soft-deleted records will reappear
+- UNIQUE constraints use partial indexes (`WHERE deleted_at IS NULL`) — not plain `UNIQUE`
 - See `.claude/rules/backend/database.md` for FK, constraint, and JSONB conventions
