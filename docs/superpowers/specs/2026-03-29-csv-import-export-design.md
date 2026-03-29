@@ -293,16 +293,24 @@ If Phase 2/3 produced errors, Phase 4 is never started — user gets all validat
 The following partial unique indexes must be added to support upsert match keys:
 
 ```sql
+-- Services: no unique index exists yet (unlike customers/hardware_categories)
+CREATE UNIQUE INDEX idx_services_name_active
+    ON services(name) WHERE deleted_at IS NULL;
+
 -- Users: composite natural key for import matching
 CREATE UNIQUE INDEX idx_users_name_type_active
     ON users(first_name, last_name, type) WHERE deleted_at IS NULL;
+
+-- Assets: composite natural key for import matching
+CREATE UNIQUE INDEX idx_assets_name_customer_active
+    ON assets(name, customer_id) WHERE deleted_at IS NULL;
 
 -- Licenses: composite natural key for import matching
 CREATE UNIQUE INDEX idx_licenses_product_customer_key_active
     ON licenses(product_name, customer_id, license_key) WHERE deleted_at IS NULL;
 ```
 
-Existing unique indexes already cover: customers (name), hardware_categories (name), services (name), category_field_definitions (category_id, name), user_assignments (user_id, customer_id), customer_services (customer_id, service_id).
+Existing unique indexes already cover: customers (name), hardware_categories (name), category_field_definitions (category_id, name), user_assignments (user_id, customer_id), customer_services (customer_id, service_id).
 
 ## FK Resolver with Caching
 
