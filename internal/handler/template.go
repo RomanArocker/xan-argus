@@ -56,6 +56,20 @@ func newFuncMap() template.FuncMap {
 			}
 			return val
 		},
+		"numStr": func(n pgtype.Numeric) string {
+			if !n.Valid {
+				return ""
+			}
+			v, err := n.Value()
+			if err != nil || v == nil {
+				return ""
+			}
+			b, ok := v.([]byte)
+			if !ok {
+				return fmt.Sprintf("%v", v)
+			}
+			return string(b)
+		},
 	}
 }
 
@@ -71,6 +85,7 @@ func NewTemplateEngine(templateDir string) (*TemplateEngine, error) {
 		filepath.Join(templateDir, "services", "list_rows.html"),
 		filepath.Join(templateDir, "categories", "list_rows.html"),
 		filepath.Join(templateDir, "assets", "fields_partial.html"),
+		filepath.Join(templateDir, "bom", "list_rows.html"),
 	}
 
 	// Page templates: each gets layout + all partials + its own content
@@ -91,6 +106,8 @@ func NewTemplateEngine(templateDir string) (*TemplateEngine, error) {
 		filepath.Join(templateDir, "licenses", "detail.html"),
 		filepath.Join(templateDir, "licenses", "form.html"),
 		filepath.Join(templateDir, "import", "page.html"),
+		filepath.Join(templateDir, "bom", "list.html"),
+		filepath.Join(templateDir, "bom", "form.html"),
 	}
 
 	for _, pf := range pageFiles {

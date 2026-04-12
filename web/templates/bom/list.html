@@ -1,0 +1,42 @@
+{{define "content"}}
+<header class="page-header">
+    <div>
+        <a href="/customers/{{uuidStr .Customer.ID}}/assets/{{uuidStr .Asset.ID}}">&larr; Back to {{.Asset.Name}}</a>
+        <h1>Bill of Materials — {{.Asset.Name}}</h1>
+    </div>
+    <a href="/customers/{{uuidStr .Customer.ID}}/assets/{{uuidStr .Asset.ID}}/bom/new"
+       class="btn btn-primary">+ New Position</a>
+</header>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Order</th>
+                <th>Name</th>
+                <th>Quantity</th>
+                <th>Unit</th>
+                <th>Unit Price</th>
+                <th>Currency</th>
+                <th>Notes</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="bom-rows"
+               hx-get="/customers/{{uuidStr .Customer.ID}}/assets/{{uuidStr .Asset.ID}}/bom/rows"
+               hx-trigger="bom-reorder from:body"
+               hx-swap="innerHTML">
+            {{template "bom_rows" .RowsData}}
+        </tbody>
+    </table>
+</div>
+
+{{if .Totals}}
+<div class="card mt-1">
+    <strong>Totals: </strong>
+    {{range .Totals}}
+    {{.Currency}}: {{numStr .Total}}&nbsp;&nbsp;
+    {{end}}
+</div>
+{{end}}
+{{end}}

@@ -48,6 +48,7 @@ func main() {
 	licenseRepo := repository.NewLicenseRepository(pool)
 	customerServiceRepo := repository.NewCustomerServiceRepository(pool)
 	hardwareCategoryRepo := repository.NewHardwareCategoryRepository(pool)
+	bomRepo := repository.NewBOMRepository(pool)
 
 	// Import/Export
 	importRegistry := importer.NewRegistry()
@@ -68,7 +69,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("loading templates: %v", err)
 	}
-	handler.NewPageHandler(tmpl, customerRepo, userRepo, serviceRepo, userAssignmentRepo, assetRepo, licenseRepo, customerServiceRepo, hardwareCategoryRepo, importRegistry).RegisterRoutes(mux)
+	handler.NewPageHandler(tmpl, customerRepo, userRepo, serviceRepo, userAssignmentRepo, assetRepo, licenseRepo, customerServiceRepo, hardwareCategoryRepo, importRegistry, bomRepo).RegisterRoutes(mux)
 
 	// Register handlers
 	handler.NewCustomerHandler(customerRepo).RegisterRoutes(mux)
@@ -79,6 +80,7 @@ func main() {
 	handler.NewLicenseHandler(licenseRepo).RegisterRoutes(mux)
 	handler.NewCustomerServiceHandler(customerServiceRepo).RegisterRoutes(mux)
 	handler.NewHardwareCategoryHandler(hardwareCategoryRepo).RegisterRoutes(mux)
+	handler.NewBOMHandler(bomRepo).RegisterRoutes(mux)
 	handler.NewImportHandler(importEngine, importExporter, importRegistry).RegisterRoutes(mux)
 
 	// Static files

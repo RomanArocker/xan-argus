@@ -1,0 +1,37 @@
+{{define "bom_rows"}}
+{{range .Items}}
+<tr>
+    <td>
+        {{if not .IsFirst}}
+        <button class="btn btn-sm"
+                hx-put="/api/v1/assets/{{uuidStr .AssetID}}/bom/{{uuidStr .ID}}/up">▲</button>
+        {{else}}
+        <button class="btn btn-sm" disabled>▲</button>
+        {{end}}
+        {{if not .IsLast}}
+        <button class="btn btn-sm"
+                hx-put="/api/v1/assets/{{uuidStr .AssetID}}/bom/{{uuidStr .ID}}/down">▼</button>
+        {{else}}
+        <button class="btn btn-sm" disabled>▼</button>
+        {{end}}
+    </td>
+    <td>{{.Name}}</td>
+    <td>{{numStr .Quantity}}</td>
+    <td>{{.UnitName}}</td>
+    <td>{{numStr .UnitPrice}}</td>
+    <td>{{.Currency}}</td>
+    <td>{{default "—" (pgText .Notes)}}</td>
+    <td class="text-right">
+        <a href="/customers/{{uuidStr $.CustomerID}}/assets/{{uuidStr $.AssetID}}/bom/{{uuidStr .ID}}/edit"
+           class="btn btn-sm">Edit</a>
+        <button class="btn btn-danger btn-sm"
+                hx-delete="/api/v1/assets/{{uuidStr .AssetID}}/bom/{{uuidStr .ID}}"
+                hx-confirm="Delete BOM position '{{.Name}}'?"
+                hx-target="closest tr"
+                hx-swap="outerHTML swap:0.3s">Delete</button>
+    </td>
+</tr>
+{{else}}
+<tr><td colspan="8" class="text-muted">No BOM positions yet.</td></tr>
+{{end}}
+{{end}}

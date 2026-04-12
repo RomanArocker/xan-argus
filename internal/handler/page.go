@@ -22,6 +22,7 @@ type PageHandler struct {
 	customerServiceRepo  *repository.CustomerServiceRepository
 	hardwareCategoryRepo *repository.HardwareCategoryRepository
 	importRegistry       *importer.Registry
+	bomRepo              *repository.BOMRepository
 }
 
 func NewPageHandler(
@@ -35,6 +36,7 @@ func NewPageHandler(
 	customerServiceRepo *repository.CustomerServiceRepository,
 	hardwareCategoryRepo *repository.HardwareCategoryRepository,
 	importRegistry *importer.Registry,
+	bomRepo *repository.BOMRepository,
 ) *PageHandler {
 	return &PageHandler{
 		tmpl:                 tmpl,
@@ -47,6 +49,7 @@ func NewPageHandler(
 		customerServiceRepo:  customerServiceRepo,
 		hardwareCategoryRepo: hardwareCategoryRepo,
 		importRegistry:       importRegistry,
+		bomRepo:              bomRepo,
 	}
 }
 
@@ -76,6 +79,10 @@ func (h *PageHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /categories/new", h.categoryForm)
 	mux.HandleFunc("GET /categories/{id}/edit", h.categoryEditForm)
 	mux.HandleFunc("GET /import", h.importPage)
+	mux.HandleFunc("GET /customers/{customerId}/assets/{assetId}/bom", h.bomList)
+	mux.HandleFunc("GET /customers/{customerId}/assets/{assetId}/bom/rows", h.bomListRows)
+	mux.HandleFunc("GET /customers/{customerId}/assets/{assetId}/bom/new", h.bomForm)
+	mux.HandleFunc("GET /customers/{customerId}/assets/{assetId}/bom/{id}/edit", h.bomEditForm)
 }
 
 func (h *PageHandler) home(w http.ResponseWriter, r *http.Request) {
@@ -338,6 +345,20 @@ type AssetFieldDisplay struct {
 	Value string
 }
 
+// BOMRow wraps a BOMItem with boundary flags for template rendering.
+type BOMRow struct {
+	model.BOMItem
+	IsFirst bool
+	IsLast  bool
+}
+
+// BOMRowsData is the data passed to the bom_rows partial and bom/list page.
+type BOMRowsData struct {
+	Items      []BOMRow
+	AssetID    pgtype.UUID
+	CustomerID pgtype.UUID
+}
+
 // UserAssignmentDisplay holds a pre-resolved assignment for template dropdowns.
 type UserAssignmentDisplay struct {
 	ID          pgtype.UUID
@@ -439,6 +460,8 @@ func (h *PageHandler) assetDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	bomCount, _ := h.bomRepo.CountByAsset(r.Context(), assetID)
+
 	h.tmpl.RenderPage(w, "customers/asset_detail", map[string]any{
 		"Title":        asset.Name + " — " + customer.Name,
 		"Customer":     customer,
@@ -446,6 +469,7 @@ func (h *PageHandler) assetDetail(w http.ResponseWriter, r *http.Request) {
 		"Category":     cat,
 		"Fields":       fields,
 		"AssignedUser": assignedUser,
+		"BOMCount":     bomCount,
 	})
 }
 
@@ -649,6 +673,170 @@ func (h *PageHandler) categoryFieldsPartial(w http.ResponseWriter, r *http.Reque
 
 	data := buildCategoryFieldData(cat.Fields, fieldValues)
 	h.tmpl.RenderPartial(w, "category_fields", data)
+}
+
+func (h *PageHandler) bomList(w http.ResponseWriter, r *http.Request) {
+	customerID, err := parseUUID(r.PathValue("customerId"))
+	if err != nil {
+		http.Error(w, "invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	assetID, err := parseUUID(r.PathValue("assetId"))
+	if err != nil {
+		http.Error(w, "invalid asset ID", http.StatusBadRequest)
+		return
+	}
+	customer, err := h.customerRepo.GetByID(r.Context(), customerID)
+	if err != nil {
+		http.Error(w, "customer not found", http.StatusNotFound)
+		return
+	}
+	asset, err := h.assetRepo.GetByID(r.Context(), assetID)
+	if err != nil {
+		http.Error(w, "asset not found", http.StatusNotFound)
+		return
+	}
+	items, err := h.bomRepo.ListByAsset(r.Context(), assetID)
+	if err != nil {
+		http.Error(w, "failed to load bom", http.StatusInternalServerError)
+		return
+	}
+	totals, err := h.bomRepo.TotalsByAsset(r.Context(), assetID)
+	if err != nil {
+		http.Error(w, "failed to load bom totals", http.StatusInternalServerError)
+		return
+	}
+	rows := makeBOMRows(items)
+	h.tmpl.RenderPage(w, "bom/list", map[string]any{
+		"Title":    "BOM — " + asset.Name,
+		"Customer": customer,
+		"Asset":    asset,
+		"RowsData": BOMRowsData{Items: rows, AssetID: assetID, CustomerID: customerID},
+		"Totals":   totals,
+	})
+}
+
+func (h *PageHandler) bomListRows(w http.ResponseWriter, r *http.Request) {
+	customerID, err := parseUUID(r.PathValue("customerId"))
+	if err != nil {
+		http.Error(w, "invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	assetID, err := parseUUID(r.PathValue("assetId"))
+	if err != nil {
+		http.Error(w, "invalid asset ID", http.StatusBadRequest)
+		return
+	}
+	items, err := h.bomRepo.ListByAsset(r.Context(), assetID)
+	if err != nil {
+		http.Error(w, "failed to load bom rows", http.StatusInternalServerError)
+		return
+	}
+	rows := makeBOMRows(items)
+	h.tmpl.RenderPartial(w, "bom_rows", BOMRowsData{
+		Items:      rows,
+		AssetID:    assetID,
+		CustomerID: customerID,
+	})
+}
+
+func (h *PageHandler) bomForm(w http.ResponseWriter, r *http.Request) {
+	customerID, err := parseUUID(r.PathValue("customerId"))
+	if err != nil {
+		http.Error(w, "invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	assetID, err := parseUUID(r.PathValue("assetId"))
+	if err != nil {
+		http.Error(w, "invalid asset ID", http.StatusBadRequest)
+		return
+	}
+	customer, err := h.customerRepo.GetByID(r.Context(), customerID)
+	if err != nil {
+		http.Error(w, "customer not found", http.StatusNotFound)
+		return
+	}
+	asset, err := h.assetRepo.GetByID(r.Context(), assetID)
+	if err != nil {
+		http.Error(w, "asset not found", http.StatusNotFound)
+		return
+	}
+	units, err := h.bomRepo.ListUnits(r.Context())
+	if err != nil {
+		http.Error(w, "failed to load units", http.StatusInternalServerError)
+		return
+	}
+	currencies := []string{"CHF", "EUR", "USD", "GBP", "JPY", "CAD", "AUD"}
+	h.tmpl.RenderPage(w, "bom/form", map[string]any{
+		"Title":      "New BOM Position — " + asset.Name,
+		"Customer":   customer,
+		"Asset":      asset,
+		"Units":      units,
+		"Item":       model.BOMItem{},
+		"IsNew":      true,
+		"Currencies": currencies,
+	})
+}
+
+func (h *PageHandler) bomEditForm(w http.ResponseWriter, r *http.Request) {
+	customerID, err := parseUUID(r.PathValue("customerId"))
+	if err != nil {
+		http.Error(w, "invalid customer ID", http.StatusBadRequest)
+		return
+	}
+	assetID, err := parseUUID(r.PathValue("assetId"))
+	if err != nil {
+		http.Error(w, "invalid asset ID", http.StatusBadRequest)
+		return
+	}
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid bom item ID", http.StatusBadRequest)
+		return
+	}
+	customer, err := h.customerRepo.GetByID(r.Context(), customerID)
+	if err != nil {
+		http.Error(w, "customer not found", http.StatusNotFound)
+		return
+	}
+	asset, err := h.assetRepo.GetByID(r.Context(), assetID)
+	if err != nil {
+		http.Error(w, "asset not found", http.StatusNotFound)
+		return
+	}
+	item, err := h.bomRepo.GetByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, "bom item not found", http.StatusNotFound)
+		return
+	}
+	units, err := h.bomRepo.ListUnits(r.Context())
+	if err != nil {
+		http.Error(w, "failed to load units", http.StatusInternalServerError)
+		return
+	}
+	currencies := []string{"CHF", "EUR", "USD", "GBP", "JPY", "CAD", "AUD"}
+	h.tmpl.RenderPage(w, "bom/form", map[string]any{
+		"Title":      "Edit BOM Position — " + asset.Name,
+		"Customer":   customer,
+		"Asset":      asset,
+		"Units":      units,
+		"Item":       item,
+		"IsNew":      false,
+		"Currencies": currencies,
+	})
+}
+
+// makeBOMRows converts []model.BOMItem into []BOMRow with IsFirst/IsLast flags.
+func makeBOMRows(items []model.BOMItem) []BOMRow {
+	rows := make([]BOMRow, len(items))
+	for i, item := range items {
+		rows[i] = BOMRow{
+			BOMItem: item,
+			IsFirst: i == 0,
+			IsLast:  i == len(items)-1,
+		}
+	}
+	return rows
 }
 
 // buildCategoryFieldData merges field definitions with stored values for form rendering.
