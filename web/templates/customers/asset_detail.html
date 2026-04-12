@@ -17,6 +17,19 @@
     </dl>
 </div>
 
+<section class="section">
+    <header class="page-header">
+        <h2>Bill of Materials</h2>
+    </header>
+    <div class="card">
+        <p>
+            <a href="/customers/{{uuidStr .Customer.ID}}/assets/{{uuidStr .Asset.ID}}/bom">
+                View Bill of Materials ({{.BOMCount}} items)
+            </a>
+        </p>
+    </div>
+</section>
+
 {{if .Fields}}
 <section class="section">
     <header class="page-header"><h2>Category Fields</h2></header>
