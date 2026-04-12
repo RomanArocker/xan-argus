@@ -102,3 +102,23 @@ func (r *UserRepository) Delete(ctx context.Context, id pgtype.UUID) error {
 	}
 	return nil
 }
+
+func (r *UserRepository) ListAvailableForCustomer(ctx context.Context, customerID pgtype.UUID) ([]model.User, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, type, first_name, last_name, created_at, updated_at
+		 FROM users
+		 WHERE type = 'customer_staff'
+		   AND deleted_at IS NULL
+		   AND id NOT IN (
+		     SELECT user_id FROM user_assignments
+		     WHERE customer_id = $1 AND deleted_at IS NULL
+		   )
+		 ORDER BY first_name, last_name`,
+		customerID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing available users for customer: %w", err)
+	}
+	defer rows.Close()
+	return pgx.CollectRows(rows, pgx.RowToStructByPos[model.User])
+}
