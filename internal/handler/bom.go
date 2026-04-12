@@ -65,6 +65,14 @@ func (h *BOMHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid currency code")
 		return
 	}
+	if !input.Quantity.Valid {
+		writeError(w, http.StatusBadRequest, "quantity is required")
+		return
+	}
+	if !input.UnitPrice.Valid {
+		writeError(w, http.StatusBadRequest, "unit_price is required")
+		return
+	}
 	item, err := h.repo.Create(r.Context(), assetID, input)
 	if err != nil {
 		if isFKViolation(err) {
@@ -171,7 +179,11 @@ func (h *BOMHandler) move(w http.ResponseWriter, r *http.Request, direction stri
 		return
 	}
 	if err := h.repo.SwapSortOrder(r.Context(), assetID, id, direction); err != nil {
-		writeError(w, http.StatusNotFound, "bom item not found")
+		if strings.Contains(err.Error(), "not found") {
+			writeError(w, http.StatusNotFound, "bom item not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed to reorder bom item")
 		return
 	}
 	// Signal HTMX to refresh the bom rows partial
