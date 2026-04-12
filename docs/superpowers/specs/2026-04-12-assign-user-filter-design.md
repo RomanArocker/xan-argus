@@ -9,7 +9,7 @@ The "Assign User" dropdown on the customer detail page currently shows all users
 
 ## Solution
 
-Add a new repository method `ListAvailableForCustomer` that returns only `customer_staff` users not yet assigned to the given customer. Update the page handler to use this method instead of the generic `List`.
+Add a new repository method `ListAvailableForCustomer` that returns only `customer_staff` users not yet assigned to the given customer. Update the page handler to use two separate user fetches: one for the dropdown (filtered), one for building display maps for existing assignments.
 
 ## Changes
 
@@ -37,21 +37,28 @@ ORDER BY first_name, last_name
 
 No pagination — the list of available users per customer is expected to remain small.
 
+**Note on `NOT IN` safety:** `user_assignments.user_id` is `NOT NULL` by schema constraint, so the `NOT IN` subquery never produces `NULL` values and is safe from SQL three-valued logic issues.
+
 ### 2. Page Handler — `internal/handler/page.go`
 
-In `customerDetail`, replace:
+In `customerDetail`, the existing `users` variable is used for **two distinct purposes**:
+1. Populating the "Assign User" dropdown
+2. Building display maps for already-assigned users shown in the assignment table (`buildAssignmentMap`, `buildUserAssignmentDisplayList`)
+
+These must be split into two separate fetch calls:
 
 ```go
-h.userRepo.List(r.Context(), model.ListParams{Limit: 100})
+// For the dropdown: only unassigned customer_staff
+availableUsers, _ := h.userRepo.ListAvailableForCustomer(r.Context(), id)
+
+// For display maps: all customer_staff (only customer_staff can be assigned, so this covers all assignments)
+allCustomerStaff, _ := h.userRepo.List(r.Context(), model.ListParams{Filter: "customer_staff", Limit: 500})
 ```
 
-with:
+- `availableUsers` is passed to the template as `"Users"` (dropdown options)
+- `allCustomerStaff` replaces the existing `users` variable in calls to `buildAssignmentMap` and `buildUserAssignmentDisplayList`
 
-```go
-h.userRepo.ListAvailableForCustomer(r.Context(), id)
-```
-
-The template data key `"Users"` remains unchanged. No template modifications required.
+**Error handling:** Both calls follow the existing convention in `customerDetail` (errors silently ignored with `_`). No change to error handling behavior.
 
 ## Scope
 
