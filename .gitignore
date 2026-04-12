@@ -36,3 +36,4 @@ CLAUDE.local.md
 # Playwright CLI (browser automation artifacts)
 playwright-cli.json
 .playwright-cli/
+.worktrees/
