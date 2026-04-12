@@ -144,7 +144,10 @@ func (h *PageHandler) customerDetail(w http.ResponseWriter, r *http.Request) {
 	licenses, _ := h.licenseRepo.ListByCustomer(r.Context(), id, listParams)
 	assignments, _ := h.userAssignmentRepo.ListByCustomer(r.Context(), id, listParams)
 	customerServices, _ := h.customerServiceRepo.ListByCustomer(r.Context(), id, listParams)
-	users, _ := h.userRepo.List(r.Context(), model.ListParams{Limit: 100})
+	// For the dropdown: only unassigned customer_staff
+	availableUsers, _ := h.userRepo.ListAvailableForCustomer(r.Context(), id)
+	// For display maps: all customer_staff (covers all existing assignments)
+	allCustomerStaff, _ := h.userRepo.List(r.Context(), model.ListParams{Filter: "customer_staff", Limit: 500})
 	allServices, _ := h.serviceRepo.List(r.Context(), model.ListParams{Limit: 100})
 	categories, err := h.hardwareCategoryRepo.List(r.Context())
 	if err != nil {
@@ -155,8 +158,8 @@ func (h *PageHandler) customerDetail(w http.ResponseWriter, r *http.Request) {
 	for _, cat := range categories {
 		categoryMap[uuidToStr(cat.ID)] = cat.Name
 	}
-	licenseAssignmentMap := buildAssignmentMap(assignments, users)
-	userAssignmentDisplays := buildUserAssignmentDisplayList(assignments, users)
+	licenseAssignmentMap := buildAssignmentMap(assignments, allCustomerStaff)
+	userAssignmentDisplays := buildUserAssignmentDisplayList(assignments, allCustomerStaff)
 
 	h.tmpl.RenderPage(w, "customers/detail", map[string]any{
 		"Title":                  customer.Name,
@@ -165,7 +168,7 @@ func (h *PageHandler) customerDetail(w http.ResponseWriter, r *http.Request) {
 		"Licenses":               licenses,
 		"Assignments":            assignments,
 		"CustomerServices":       customerServices,
-		"Users":                  users,
+		"Users":                  availableUsers,
 		"AllServices":            allServices,
 		"AllCategories":          categories,
 		"CategoryMap":            categoryMap,
