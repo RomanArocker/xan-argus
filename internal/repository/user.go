@@ -113,7 +113,7 @@ func (r *UserRepository) ListAvailableForCustomer(ctx context.Context, customerI
 		     SELECT user_id FROM user_assignments
 		     WHERE customer_id = $1 AND deleted_at IS NULL
 		   )
-		 ORDER BY first_name, last_name`,
+		 ORDER BY last_name, first_name`,
 		customerID,
 	)
 	if err != nil {
